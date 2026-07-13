@@ -224,49 +224,48 @@ async function apiRemoveSticker(boardId, index) {
 }
 
 // ==========================================
-// 5. 스티치 캐릭터 SVG 드로잉 빌더
+// 5. 손그림 우주 스티커 SVG 드로잉 빌더
 // ==========================================
-function getStitchSvg(isSticker) {
-    const primary = isSticker ? "#2E79B9" : "rgba(180, 180, 180, 0.25)";
-    const ear = isSticker ? "#FF8E9E" : "rgba(180, 180, 180, 0.15)";
-    const nose = isSticker ? "#0D192B" : "rgba(180, 180, 180, 0.2)";
-    const eye = isSticker ? "#0D192B" : "rgba(180, 180, 180, 0.2)";
-    const patch = isSticker ? "#A1D2FA" : "rgba(180, 180, 180, 0.2)";
+function getShapeMarkup(index, stroke, fill, width) {
+    const type = index % 5;
+    if (type === 0) {
+        // Doodle Star
+        return `<path d="M 50,12 C 51,12 58,34 59,36 C 60,38 84,38 85,40 C 86,42 67,54 68,56 C 69,58 74,80 72,82 C 70,84 51,70 49,70 C 47,70 28,84 26,82 C 24,80 29,58 30,56 C 31,54 12,42 13,40 C 14,38 38,38 39,36 C 40,34 47,12 50,12 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
+    } else if (type === 1) {
+        // Doodle Moon
+        return `<path d="M 64,22 C 45,22 28,36 28,54 C 28,72 45,86 64,86 C 46,81 40,59 51,41 C 56,33 59,27 64,22 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
+    } else if (type === 2) {
+        // Doodle Saturn
+        const backRing = `<path d="M 23,48 C 30,39 70,39 77,48" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
+        const sphere = `<ellipse cx="50" cy="52" rx="22" ry="18" stroke="${stroke}" fill="${fill}" stroke-width="${width}" />`;
+        const frontRing = `<path d="M 18,52 C 18,59 34,68 50,68 C 66,68 82,59 82,52" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
+        return backRing + sphere + frontRing;
+    } else if (type === 3) {
+        // Doodle Sparkles
+        const sparkle1 = `<path d="M 40,38 Q 40,54 24,54 Q 40,54 40,70 Q 40,54 56,54 Q 40,54 40,38 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
+        const sparkle2 = `<path d="M 68,18 Q 68,28 58,28 Q 68,28 68,38 Q 68,28 78,28 Q 68,28 68,18 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
+        return sparkle1 + sparkle2;
+    } else {
+        // Doodle Sun
+        const sphere = `<circle cx="50" cy="50" r="18" stroke="${stroke}" fill="${fill}" stroke-width="${width}" />`;
+        const spiral = `<path d="M 50,50 Q 46,45 50,42 Q 55,40 56,46 Q 57,53 48,54 Q 40,55 42,44 Q 44,36 54,36 Q 64,36 62,50 Q 60,60 46,58" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
+        const rays = `<path d="M 50,22 L 50,13 M 50,78 L 50,87 M 22,50 L 13,50 M 78,50 L 87,50 M 30,30 L 23,23 M 70,70 L 77,77 M 30,70 L 23,77 M 70,30 L 77,23" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
+        return sphere + spiral + rays;
+    }
+}
 
-    let reflection = "";
-    if (isSticker) {
-        reflection = `
-            <circle cx="32" cy="43" r="2.5" fill="white" />
-            <circle cx="68" cy="43" r="2.5" fill="white" />
+function getCosmicStickerSvg(index, isSticker) {
+    if (!isSticker) {
+        return `
+            <svg viewBox="0 0 100 100" class="sticker-svg" style="opacity: 0.22; filter: none;">
+                ${getShapeMarkup(index, "#718096", "none", 3)}
+            </svg>
         `;
     }
-
     return `
         <svg viewBox="0 0 100 100" class="sticker-svg">
-            <!-- Left Ear -->
-            <path d="M 30,40 C -5,5 -10,60 25,65 Z" fill="${primary}" />
-            <path d="M 28,45 C 2,15 -2,58 24,62 Z" fill="${ear}" />
-            
-            <!-- Right Ear -->
-            <path d="M 70,40 C 105,5 110,60 75,65 Z" fill="${primary}" />
-            <path d="M 72,45 C 98,15 102,58 76,62 Z" fill="${ear}" />
-            
-            <!-- Head -->
-            <ellipse cx="50" cy="50" rx="32" ry="24" fill="${primary}" />
-            
-            <!-- Eye Patches -->
-            <ellipse cx="32" cy="48" rx="8" ry="11" fill="${patch}" />
-            <ellipse cx="68" cy="48" rx="8" ry="11" fill="${patch}" />
-            
-            <!-- Eyes -->
-            <ellipse cx="33" cy="48" rx="5" ry="8" fill="${eye}" />
-            <ellipse cx="67" cy="48" rx="5" ry="8" fill="${eye}" />
-            
-            <!-- Reflection -->
-            ${reflection}
-            
-            <!-- Nose -->
-            <path d="M 44,52 C 44,52 50,48 56,52 C 58,58 50,59 50,59 C 50,59 42,58 44,52 Z" fill="${nose}" />
+            ${getShapeMarkup(index, "white", "white", 14)}
+            ${getShapeMarkup(index, "#2D3748", "white", 4.5)}
         </svg>
     `;
 }
@@ -328,7 +327,7 @@ async function refreshApp() {
         const slot = document.createElement("div");
         slot.className = `grid-slot ${isActive ? "active" : ""}`;
         slot.innerHTML = `
-            ${getStitchSvg(isActive)}
+            ${getCosmicStickerSvg(i, isActive)}
             <span class="slot-number">${i + 1}</span>
         `;
 

@@ -4,21 +4,21 @@
 
 /* 1. 디자인 토큰 및 변수 */
 :root {
-    --stitch-primary: #2E79B9;
-    --stitch-primary-dark: #1D3D5E;
-    --stitch-light-sky: #A1D2FA;
-    --stitch-pink: #FF8E9E;
-    --stitch-dark: #0D192B;
-    --stitch-bg-light: #F2F8FD;
+    --stitch-primary: #4A5568; /* slate blue-gray */
+    --stitch-primary-dark: #2D3748; /* charcoal */
+    --stitch-light-sky: #E2E8F0;
+    --stitch-pink: #F87171; /* soft pink */
+    --stitch-dark: #1A202C;
+    --stitch-bg-light: #FAF6F0; /* cozy cream */
     --stitch-card-bg: #FFFFFF;
     
-    --accent-yellow: #FFD54F;
-    --soft-pink: #FFECEF;
-    --soft-blue: #E3F2FD;
+    --accent-yellow: #F59E0B; /* warm gold */
+    --soft-pink: #FEF2F2;
+    --soft-blue: #EDF2F7;
     
-    --text-primary: #1D3D5E;
-    --text-muted: #757575;
-    --border-color: #E0E0E0;
+    --text-primary: #2D3748;
+    --text-muted: #718096;
+    --border-color: #CBD5E0;
     
     --font-app: 'Nunito', 'Jua', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
@@ -33,7 +33,7 @@
 
 body {
     font-family: var(--font-app);
-    background-color: #DEEBF7;
+    background-color: #E2DCD5; /* cozy warm background */
     color: var(--text-primary);
     display: flex;
     justify-content: center;
@@ -337,17 +337,17 @@ body {
     max-height: 100%;
 }
 
-/* 11. 격자 칸 슬롯 디자인 */
 .grid-slot {
     aspect-ratio: 1;
     border-radius: 12px;
-    background-color: rgba(224, 224, 224, 0.2);
+    background-color: transparent;
+    border: 2px dashed #CBD5E0; /* hand-drawn dotted box style */
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
+    transition: background-color 0.2s, transform 0.1s, border-color 0.2s;
 }
 
 .grid-slot:active {
@@ -355,7 +355,8 @@ body {
 }
 
 .grid-slot.active {
-    background-color: var(--soft-blue);
+    background-color: transparent;
+    border: 2px dashed transparent; /* hide dotted box when active */
 }
 
 .slot-number {
@@ -368,13 +369,15 @@ body {
 }
 
 .grid-slot.active .slot-number {
-    color: var(--stitch-primary);
+    color: var(--text-muted);
 }
 
-/* 스티커 등장 팝 애니메이션 */
+/* 스티커 등장 팝 애니메이션 및 스티커 종이 질감 효과 */
 .sticker-svg {
     width: 85%;
     height: 85%;
+    /* drop-shadow filters on the SVG to make it look like a physical paper sticker */
+    filter: drop-shadow(2px 3px 2px rgba(0, 0, 0, 0.15));
 }
 
 .grid-slot.active .sticker-svg {
@@ -382,8 +385,8 @@ body {
 }
 
 @keyframes popIn {
-    0% { transform: scale(0.5); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
+    0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
 /* 12. 다이얼로그 모달 디자인 */
