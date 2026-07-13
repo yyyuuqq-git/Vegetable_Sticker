@@ -1,0 +1,620 @@
+/* ==========================================
+   스티치 테마 칭찬나라 전역 CSS 디자인 시스템
+   ========================================== */
+
+/* 1. 디자인 토큰 및 변수 */
+:root {
+    --stitch-primary: #2E79B9;
+    --stitch-primary-dark: #1D3D5E;
+    --stitch-light-sky: #A1D2FA;
+    --stitch-pink: #FF8E9E;
+    --stitch-dark: #0D192B;
+    --stitch-bg-light: #F2F8FD;
+    --stitch-card-bg: #FFFFFF;
+    
+    --accent-yellow: #FFD54F;
+    --soft-pink: #FFECEF;
+    --soft-blue: #E3F2FD;
+    
+    --text-primary: #1D3D5E;
+    --text-muted: #757575;
+    --border-color: #E0E0E0;
+    
+    --font-app: 'Nunito', 'Jua', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 2. 전역 스타일 초기화 */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent; /* 모바일 터치 하이라이트 제거 */
+}
+
+body {
+    font-family: var(--font-app);
+    background-color: #DEEBF7;
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* 3. 모바일 앱 형태의 컨테이너 설계 (Desktop 대응) */
+.app-container {
+    width: 100%;
+    max-width: 480px; /* 스마트폰 가로 크기 제한 */
+    height: 100vh;
+    background-color: var(--stitch-bg-light);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+    position: relative;
+}
+
+@media (min-width: 480px) {
+    .app-container {
+        height: 850px; /* 데스크톱 웹 환경에서 고정 세로 크기 */
+        border-radius: 24px;
+        overflow: hidden;
+    }
+}
+
+/* 4. 헤더 레이아웃 */
+.app-header {
+    background-color: var(--stitch-primary);
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+    font-family: 'Jua', sans-serif;
+    font-size: 20px;
+    font-weight: normal;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-button {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.icon-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.icon-button:active {
+    transform: scale(0.95);
+}
+
+/* 5. 메인 스크롤 콘텐츠 영역 */
+.app-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* 6. 로딩 스피너 */
+.spinner-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--stitch-bg-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid var(--soft-blue);
+    border-top: 5px solid var(--stitch-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 7. 역할 배너 (남자친구 / 여자친구 모드) */
+.role-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 14px;
+    transition: background-color 0.3s;
+}
+
+.role-banner.reader-mode {
+    background-color: var(--soft-blue);
+}
+
+.role-banner.editor-mode {
+    background-color: var(--soft-pink);
+}
+
+.role-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.role-status .material-icons {
+    font-size: 20px;
+}
+
+.reader-mode .role-status .material-icons {
+    color: var(--stitch-primary);
+}
+
+.editor-mode .role-status .material-icons {
+    color: var(--stitch-pink);
+}
+
+.status-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+.toggle-button {
+    background-color: var(--stitch-pink);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.editor-mode .toggle-button {
+    background-color: var(--stitch-primary);
+}
+
+.toggle-button:active {
+    transform: scale(0.95);
+}
+
+/* 8. 칭찬판 카드 요약 정보 */
+.summary-card {
+    background-color: var(--stitch-card-bg);
+    border-radius: 20px;
+    padding: 18px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.board-title {
+    font-size: 19px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--stitch-primary-dark);
+    margin-bottom: 4px;
+}
+
+.board-code-display {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+.progress-info {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.progress-count {
+    color: var(--stitch-primary);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 10px;
+    background-color: var(--soft-blue);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: var(--stitch-primary);
+    width: 0%;
+    border-radius: 5px;
+    transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.reward-banner {
+    width: 100%;
+    background-color: rgba(227, 242, 253, 0.5);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reward-icon {
+    color: var(--stitch-primary);
+    font-size: 18px;
+}
+
+.reward-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+/* 9. 축하 배너 */
+.celebration-banner {
+    background-color: var(--accent-yellow);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 15px rgba(255, 213, 79, 0.3);
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+.celebration-icon {
+    font-size: 32px;
+    color: var(--stitch-dark);
+}
+
+.celebration-info h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--stitch-dark);
+}
+
+.celebration-info p {
+    font-size: 12px;
+    color: rgba(13, 25, 43, 0.8);
+}
+
+/* 10. 스티커 격자 보드 */
+.board-grid-card {
+    background-color: var(--stitch-card-bg);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    flex: 1;
+}
+
+.sticker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1f);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    max-height: 100%;
+}
+
+/* 11. 격자 칸 슬롯 디자인 */
+.grid-slot {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    background-color: rgba(224, 224, 224, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.grid-slot:active {
+    transform: scale(0.92);
+}
+
+.grid-slot.active {
+    background-color: var(--soft-blue);
+}
+
+.slot-number {
+    position: absolute;
+    bottom: 4px;
+    right: 6px;
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--text-muted);
+}
+
+.grid-slot.active .slot-number {
+    color: var(--stitch-primary);
+}
+
+/* 스티커 등장 팝 애니메이션 */
+.sticker-svg {
+    width: 85%;
+    height: 85%;
+}
+
+.grid-slot.active .sticker-svg {
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* 12. 다이얼로그 모달 디자인 */
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(13, 25, 43, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.modal-content {
+    background-color: var(--stitch-card-bg);
+    width: 88%;
+    max-width: 380px;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes modalPop {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.modal-content.scrollable {
+    max-height: 80%;
+    overflow-y: auto;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+.modal-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-color);
+    font-family: var(--font-app);
+    font-size: 14px;
+    color: var(--stitch-dark);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="password"]:focus {
+    border-color: var(--stitch-primary);
+}
+
+input:disabled {
+    background-color: #F5F5F5;
+    color: #9E9E9E;
+    border-color: #E0E0E0;
+    cursor: not-allowed;
+}
+
+.input-row {
+    display: flex;
+    gap: 8px;
+}
+
+.input-row input {
+    flex: 1;
+}
+
+.error-text {
+    font-size: 11px;
+    color: #E53935;
+    font-weight: 700;
+}
+
+.divider {
+    border: none;
+    border-top: 1.5px solid var(--border-color);
+    margin: 4px 0;
+}
+
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.section-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--stitch-primary);
+}
+
+.badge-lock {
+    font-size: 9px;
+    background-color: var(--soft-pink);
+    color: var(--stitch-pink);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 800;
+}
+
+.share-code-box {
+    background-color: var(--soft-blue);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1.5px dashed var(--stitch-primary);
+}
+
+.share-code {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+.share-code-box .icon-button {
+    color: var(--stitch-primary);
+}
+
+/* 13. 공용 버튼 디자인 */
+.btn {
+    border: none;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-family: var(--font-app);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s, background-color 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+.btn-primary {
+    background-color: var(--stitch-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #24639B;
+}
+
+.btn-secondary {
+    background-color: #F0F0F0;
+    color: var(--text-muted);
+}
+
+.btn-secondary:hover {
+    background-color: #E2E2E2;
+}
+
+.btn-danger {
+    background-color: #E53935;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #C62828;
+}
+
+.btn-sm {
+    padding: 8px 14px;
+    font-size: 12px;
+    border-radius: 10px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* 14. 토스트 알림 메일 */
+.toast {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(13, 25, 43, 0.85);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    z-index: 200;
+    pointer-events: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
