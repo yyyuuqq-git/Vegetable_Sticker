@@ -268,7 +268,14 @@
                 <p id="view-sticker-memo-text" class="memo-view-text"></p>
                 <span id="view-sticker-date" class="memo-view-date"></span>
             </div>
+            <!-- 수정용 입력 영역 (수정 버튼 누를 시 노출) -->
+            <div id="memo-edit-area" class="form-group hidden">
+                <textarea id="input-edit-sticker-memo" rows="3" class="memo-textarea" maxlength="200"></textarea>
+            </div>
             <div class="modal-actions">
+                <button id="btn-memo-edit-start" class="btn btn-primary hidden">수정 ✍️</button>
+                <button id="btn-memo-edit-cancel" class="btn btn-secondary hidden">취소</button>
+                <button id="btn-memo-edit-save" class="btn btn-primary hidden">저장 🚀</button>
                 <button id="btn-memo-view-close" class="btn btn-secondary">닫기</button>
             </div>
         </div>

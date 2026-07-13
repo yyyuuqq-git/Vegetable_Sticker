@@ -32,6 +32,7 @@ let currentStickers = [];
 let isEditorMode = false;
 let deleteTargetIndex = null;
 let memoTargetIndex = null;
+let editTargetIndex = null;
 
 // 기본 가상의 보드 데이터 (체험용)
 const defaultBoardData = {
@@ -105,6 +106,12 @@ const modalMemoView = document.getElementById("modal-memo-view");
 const viewStickerMemoText = document.getElementById("view-sticker-memo-text");
 const viewStickerDate = document.getElementById("view-sticker-date");
 const btnMemoViewClose = document.getElementById("btn-memo-view-close");
+
+const memoEditArea = document.getElementById("memo-edit-area");
+const inputEditStickerMemo = document.getElementById("input-edit-sticker-memo");
+const btnMemoEditStart = document.getElementById("btn-memo-edit-start");
+const btnMemoEditCancel = document.getElementById("btn-memo-edit-cancel");
+const btnMemoEditSave = document.getElementById("btn-memo-edit-save");
 
 // 공용 버튼 트리거
 const btnShare = document.getElementById("btn-share");
@@ -219,6 +226,32 @@ async function apiAddSticker(boardId, index, memo) {
             return true;
         } catch (e) {
             console.error("스티커 부착 실패", e);
+            return false;
+        }
+    }
+}
+
+// 스티커 메모 수정
+async function apiUpdateStickerMemo(boardId, index, memo) {
+    if (isLocalMode || !supabaseClient) {
+        const current = await apiGetStickers(boardId);
+        const sticker = current.find(s => s.sticker_index === index);
+        if (sticker) {
+            sticker.memo = memo;
+            localStorage.setItem(`stickers_${boardId}`, JSON.stringify(current));
+        }
+        return true;
+    } else {
+        try {
+            const { error } = await supabaseClient
+                .from("praise_stickers")
+                .update({ memo: memo })
+                .eq("board_id", boardId)
+                .eq("sticker_index", index);
+            if (error) throw error;
+            return true;
+        } catch (e) {
+            console.error("스티커 메모 수정 실패", e);
             return false;
         }
     }
@@ -514,12 +547,27 @@ function formatDate(dateStr) {
 async function handleSlotClick(index, isActive) {
     if (isActive) {
         // 이미 붙은 스티커 클릭 시: 메모 모달창 노출
+        editTargetIndex = index;
         const sticker = currentStickers.find(s => s.sticker_index === index);
         const memoText = sticker && sticker.memo ? sticker.memo : "등록된 칭찬 메모가 없습니다. 🧸";
         const createdDate = sticker && sticker.created_at ? formatDate(sticker.created_at) : "";
 
         viewStickerMemoText.textContent = memoText;
         viewStickerDate.textContent = createdDate;
+
+        // 수정/저장 관련 UI 초기화
+        document.querySelector("#modal-memo-view .memo-view-content").classList.remove("hidden");
+        memoEditArea.classList.add("hidden");
+        btnMemoEditCancel.classList.add("hidden");
+        btnMemoEditSave.classList.add("hidden");
+        btnMemoViewClose.classList.remove("hidden");
+
+        if (isEditorMode) {
+            btnMemoEditStart.classList.remove("hidden");
+        } else {
+            btnMemoEditStart.classList.add("hidden");
+        }
+
         modalMemoView.classList.remove("hidden");
     } else {
         // 빈칸 클릭 시: 편집자만 메모 작성 모달 노출 후 부착
@@ -811,7 +859,57 @@ btnMemoCancel.addEventListener("click", () => {
 
 // 칭찬 메모 확인 모달 이벤트 리스너
 btnMemoViewClose.addEventListener("click", () => {
+    editTargetIndex = null;
     modalMemoView.classList.add("hidden");
+});
+
+// 메모 수정 시작
+btnMemoEditStart.addEventListener("click", () => {
+    if (editTargetIndex === null) return;
+    const sticker = currentStickers.find(s => s.sticker_index === editTargetIndex);
+    inputEditStickerMemo.value = sticker && sticker.memo ? sticker.memo : "";
+    
+    // UI 전환
+    document.querySelector("#modal-memo-view .memo-view-content").classList.add("hidden");
+    memoEditArea.classList.remove("hidden");
+    
+    btnMemoEditStart.classList.add("hidden");
+    btnMemoViewClose.classList.add("hidden");
+    btnMemoEditCancel.classList.remove("hidden");
+    btnMemoEditSave.classList.remove("hidden");
+    
+    inputEditStickerMemo.focus();
+});
+
+// 메모 수정 취소
+btnMemoEditCancel.addEventListener("click", () => {
+    document.querySelector("#modal-memo-view .memo-view-content").classList.remove("hidden");
+    memoEditArea.classList.add("hidden");
+    
+    btnMemoEditStart.classList.remove("hidden");
+    btnMemoViewClose.classList.remove("hidden");
+    btnMemoEditCancel.classList.add("hidden");
+    btnMemoEditSave.classList.add("hidden");
+});
+
+// 메모 수정 저장
+btnMemoEditSave.addEventListener("click", async () => {
+    if (editTargetIndex === null) return;
+    const newMemoText = inputEditStickerMemo.value.trim();
+    
+    loadingSpinner.classList.remove("hidden");
+    modalMemoView.classList.add("hidden");
+    
+    const success = await apiUpdateStickerMemo(currentBoardId, editTargetIndex, newMemoText);
+    if (success) {
+        showToast("칭찬 메모가 수정되었습니다. ✨");
+        editTargetIndex = null;
+        await refreshApp();
+    } else {
+        showToast("메모 수정에 실패했습니다.");
+        loadingSpinner.classList.add("hidden");
+        modalMemoView.classList.remove("hidden");
+    }
 });
 
 // ==========================================
