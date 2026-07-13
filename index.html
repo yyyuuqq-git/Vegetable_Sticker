@@ -201,10 +201,10 @@
     <div id="modal-delete" class="modal-overlay hidden">
         <div class="modal-content">
             <h3 class="modal-title">스티커 제거</h3>
-            <p id="delete-confirm-text">스티커를 정말 뗄까요?</p>
+            <p id="delete-confirm-text">스티커를 떼겠습니까?</p>
             <div class="modal-actions">
-                <button id="btn-delete-cancel" class="btn btn-secondary">아니오</button>
-                <button id="btn-delete-confirm" class="btn btn-danger">예</button>
+                <button id="btn-delete-cancel" class="btn btn-secondary">아니요</button>
+                <button id="btn-delete-confirm" class="btn btn-danger">네</button>
             </div>
         </div>
     </div>
@@ -241,6 +241,35 @@
             <div class="modal-actions">
                 <button id="btn-share-close" class="btn btn-secondary">닫기</button>
                 <button id="btn-create-board" class="btn btn-primary">생성 및 이동</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- E. 칭찬 스티커 메모 입력 모달 -->
+    <div id="modal-memo-input" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="modal-title">칭찬 한마디 작성하기 ✍️</h3>
+            <p class="modal-desc">어떤 이유로 칭찬 스티커를 붙이는지 메모를 남겨주세요.</p>
+            <div class="form-group">
+                <textarea id="input-sticker-memo" placeholder="예: 오늘도 집안일을 도와줘서 고마워! 💕" rows="3" class="memo-textarea" maxlength="200"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-memo-cancel" class="btn btn-secondary">취소</button>
+                <button id="btn-memo-submit" class="btn btn-primary">붙이기 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- F. 칭찬 스티커 메모 확인 모달 -->
+    <div id="modal-memo-view" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="modal-title">칭찬 스티커 메모 💌</h3>
+            <div class="memo-view-content">
+                <p id="view-sticker-memo-text" class="memo-view-text"></p>
+                <span id="view-sticker-date" class="memo-view-date"></span>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-memo-view-close" class="btn btn-secondary">닫기</button>
             </div>
         </div>
     </div>

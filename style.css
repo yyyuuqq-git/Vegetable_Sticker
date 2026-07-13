@@ -348,6 +348,9 @@ body {
     position: relative;
     cursor: pointer;
     transition: background-color 0.2s, transform 0.1s, border-color 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .grid-slot:active {
@@ -683,3 +686,46 @@ input:disabled {
     color: var(--text-muted);
     margin-top: 2px;
 }
+
+/* 칭찬 메모 추가 스타일 */
+.memo-textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-color);
+    font-family: var(--font-app);
+    font-size: 14px;
+    color: var(--stitch-dark);
+    outline: none;
+    resize: none;
+    transition: border-color 0.2s;
+}
+
+.memo-textarea:focus {
+    border-color: var(--stitch-primary);
+}
+
+.memo-view-content {
+    background-color: var(--soft-blue);
+    padding: 16px;
+    border-radius: 16px;
+    border: 1.5px solid rgba(74, 85, 104, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.memo-view-text {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--stitch-primary-dark);
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+.memo-view-date {
+    font-size: 11px;
+    color: var(--text-muted);
+    align-self: flex-end;
+}
+

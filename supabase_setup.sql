@@ -15,6 +15,11 @@ CREATE TABLE IF NOT EXISTS public.praise_stickers (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     board_id TEXT REFERENCES public.praise_boards(id) ON DELETE CASCADE NOT NULL,
     sticker_index INTEGER NOT NULL,
+    memo TEXT, -- 칭찬 메모 내용
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     UNIQUE(board_id, sticker_index)
 );
+
+-- 기존 테이블에 memo 컬럼 추가가 필요한 경우 실행할 쿼리:
+-- ALTER TABLE public.praise_stickers ADD COLUMN IF NOT EXISTS memo TEXT;
+

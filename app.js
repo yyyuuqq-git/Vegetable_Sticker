@@ -31,6 +31,7 @@ let currentBoard = null;
 let currentStickers = [];
 let isEditorMode = false;
 let deleteTargetIndex = null;
+let memoTargetIndex = null;
 
 // 기본 가상의 보드 데이터 (체험용)
 const defaultBoardData = {
@@ -94,6 +95,16 @@ const setupTargetCount = document.getElementById("setup-target-count");
 const setupReward = document.getElementById("setup-reward");
 const setupPin = document.getElementById("setup-pin");
 const btnSetupSubmit = document.getElementById("btn-setup-submit");
+
+const modalMemoInput = document.getElementById("modal-memo-input");
+const inputStickerMemo = document.getElementById("input-sticker-memo");
+const btnMemoCancel = document.getElementById("btn-memo-cancel");
+const btnMemoSubmit = document.getElementById("btn-memo-submit");
+
+const modalMemoView = document.getElementById("modal-memo-view");
+const viewStickerMemoText = document.getElementById("view-sticker-memo-text");
+const viewStickerDate = document.getElementById("view-sticker-date");
+const btnMemoViewClose = document.getElementById("btn-memo-view-close");
 
 // 공용 버튼 트리거
 const btnShare = document.getElementById("btn-share");
@@ -186,11 +197,16 @@ async function apiGetStickers(boardId) {
 }
 
 // 스티커 부착
-async function apiAddSticker(boardId, index) {
+async function apiAddSticker(boardId, index, memo) {
     if (isLocalMode || !supabaseClient) {
         const current = await apiGetStickers(boardId);
         if (!current.some(s => s.sticker_index === index)) {
-            current.push({ board_id: boardId, sticker_index: index });
+            current.push({ 
+                board_id: boardId, 
+                sticker_index: index, 
+                memo: memo,
+                created_at: new Date().toISOString() 
+            });
             localStorage.setItem(`stickers_${boardId}`, JSON.stringify(current));
         }
         return true;
@@ -198,7 +214,7 @@ async function apiAddSticker(boardId, index) {
         try {
             const { error } = await supabaseClient
                 .from("praise_stickers")
-                .insert({ board_id: boardId, sticker_index: index });
+                .insert({ board_id: boardId, sticker_index: index, memo: memo });
             if (error) throw error;
             return true;
         } catch (e) {
@@ -413,8 +429,54 @@ async function refreshApp() {
             <span class="slot-number">${i + 1}</span>
         `;
 
-        // 칸 클릭 핸들러
-        slot.addEventListener("click", () => handleSlotClick(i, isActive));
+        // 칸 클릭 및 롱프레스 핸들러 바인딩 (모바일 터치 & 데스크톱 마우스 대응)
+        let pressTimer = null;
+        let preventClick = false;
+
+        const startPress = (e) => {
+            if (e.type === 'mousedown' && e.button !== 0) return;
+            preventClick = false;
+            pressTimer = setTimeout(() => {
+                preventClick = true;
+                handleSlotLongPress(i, isActive);
+            }, 600); // 600ms 롱프레스 임계값
+        };
+
+        const cancelPress = () => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+
+        const endPress = (e) => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+
+        // 데스크톱 마우스 이벤트
+        slot.addEventListener("mousedown", startPress);
+        slot.addEventListener("mouseup", endPress);
+        slot.addEventListener("mouseleave", cancelPress);
+
+        // 모바일 터치 이벤트
+        slot.addEventListener("touchstart", startPress, { passive: true });
+        slot.addEventListener("touchend", endPress, { passive: true });
+        slot.addEventListener("touchcancel", cancelPress, { passive: true });
+        slot.addEventListener("touchmove", cancelPress, { passive: true });
+
+        // 클릭 이벤트 (짧은 터치 / 클릭)
+        slot.addEventListener("click", (e) => {
+            if (preventClick) {
+                e.preventDefault();
+                preventClick = false;
+                return;
+            }
+            handleSlotClick(i, isActive);
+        });
+
         stickerGrid.appendChild(slot);
     }
 
@@ -433,30 +495,57 @@ async function refreshApp() {
     appContent.classList.remove("hidden");
 }
 
-// 스티커 슬롯 클릭 제어
+// 날짜 포맷 함수
+function formatDate(dateStr) {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const date = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    
+    return `${year}년 ${month}월 ${date}일 ${hours}:${minutes}`;
+}
+
+// 스티커 슬롯 클릭 제어 (짧은 클릭: 메모 작성 또는 조회)
 async function handleSlotClick(index, isActive) {
+    if (isActive) {
+        // 이미 붙은 스티커 클릭 시: 메모 모달창 노출
+        const sticker = currentStickers.find(s => s.sticker_index === index);
+        const memoText = sticker && sticker.memo ? sticker.memo : "등록된 칭찬 메모가 없습니다. 🧸";
+        const createdDate = sticker && sticker.created_at ? formatDate(sticker.created_at) : "";
+
+        viewStickerMemoText.textContent = memoText;
+        viewStickerDate.textContent = createdDate;
+        modalMemoView.classList.remove("hidden");
+    } else {
+        // 빈칸 클릭 시: 편집자만 메모 작성 모달 노출 후 부착
+        if (!isEditorMode) {
+            showToast("스티커 추가는 여자친구(편집자)만 가능해요! 🧸");
+            return;
+        }
+        memoTargetIndex = index;
+        inputStickerMemo.value = "";
+        modalMemoInput.classList.remove("hidden");
+        inputStickerMemo.focus();
+    }
+}
+
+// 스티커 슬롯 롱프레스 제어 (길게 누르기: 스티커 떼기)
+async function handleSlotLongPress(index, isActive) {
+    if (!isActive) return; // 빈칸은 롱프레스 무시
+
     if (!isEditorMode) {
-        showToast("스티커 추가는 여자친구(편집자)만 가능해요! 🧸");
+        showToast("스티커 제거는 여자친구(편집자)만 가능해요! 🧸");
         return;
     }
 
-    if (isActive) {
-        // 이미 붙은 스티커 클릭 시: 떼어내기 다이얼로그 노출
-        deleteTargetIndex = index;
-        deleteConfirmText.textContent = `${index + 1}번째 칭찬 스티커를 정말 뗄까요?`;
-        modalDelete.classList.remove("hidden");
-    } else {
-        // 빈칸 클릭 시 스티커 즉시 부착
-        loadingSpinner.classList.remove("hidden");
-        const success = await apiAddSticker(currentBoardId, index);
-        if (success) {
-            showToast(`${index + 1}번째 스티커 부착 완료! 💙`);
-            await refreshApp();
-        } else {
-            showToast("스티커 부착 중 에러가 발생했습니다.");
-            loadingSpinner.classList.add("hidden");
-        }
-    }
+    deleteTargetIndex = index;
+    deleteConfirmText.textContent = `스티커를 떼겠습니까?`;
+    modalDelete.classList.remove("hidden");
 }
 
 // ==========================================
@@ -694,6 +783,35 @@ btnDeleteConfirm.addEventListener("click", async () => {
 btnDeleteCancel.addEventListener("click", () => {
     deleteTargetIndex = null;
     modalDelete.classList.add("hidden");
+});
+
+// 칭찬 메모 입력 모달 이벤트 리스너
+btnMemoSubmit.addEventListener("click", async () => {
+    if (memoTargetIndex === null) return;
+    const memoText = inputStickerMemo.value.trim();
+
+    loadingSpinner.classList.remove("hidden");
+    modalMemoInput.classList.add("hidden");
+
+    const success = await apiAddSticker(currentBoardId, memoTargetIndex, memoText);
+    if (success) {
+        showToast(`${memoTargetIndex + 1}번째 스티커 부착 완료! 💙`);
+        memoTargetIndex = null;
+        await refreshApp();
+    } else {
+        showToast("스티커 부착 중 에러가 발생했습니다.");
+        loadingSpinner.classList.add("hidden");
+    }
+});
+
+btnMemoCancel.addEventListener("click", () => {
+    memoTargetIndex = null;
+    modalMemoInput.classList.add("hidden");
+});
+
+// 칭찬 메모 확인 모달 이벤트 리스너
+btnMemoViewClose.addEventListener("click", () => {
+    modalMemoView.classList.add("hidden");
 });
 
 // ==========================================
