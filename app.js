@@ -1,5 +1,5 @@
 // ==========================================
-// 스티치 칭찬나라 JavaScript 핵심 기능 제어
+// 채소가게 칭찬나라 JavaScript 핵심 기능 제어
 // ==========================================
 
 // 1. Supabase 연동 정보 설정
@@ -236,29 +236,93 @@ async function apiRemoveSticker(boardId, index) {
 // ==========================================
 function getShapeMarkup(index, stroke, fill, width) {
     const type = index % 5;
+    
+    // Vegetable colors
+    let tomatoBody = "#E74C3C";
+    let tomatoLeaf = "#2ECC71";
+    let carrotBody = "#E67E22";
+    let carrotLeaf = "#2ECC71";
+    let eggplantBody = "#9B59B6";
+    let eggplantLeaf = "#27AE60";
+    let broccoliCrown = "#27AE60";
+    let broccoliStem = "#A2D9CE";
+    let cornCob = "#F1C40F";
+    let cornLeaf = "#2ECC71";
+
+    let borderStroke = stroke;
+
+    if (fill === "white") {
+        tomatoBody = "white";
+        tomatoLeaf = "white";
+        carrotBody = "white";
+        carrotLeaf = "white";
+        eggplantBody = "white";
+        eggplantLeaf = "white";
+        broccoliCrown = "white";
+        broccoliStem = "white";
+        cornCob = "white";
+        cornLeaf = "white";
+        borderStroke = "white";
+    } else if (fill === "none") {
+        tomatoBody = "none";
+        tomatoLeaf = "none";
+        carrotBody = "none";
+        carrotLeaf = "none";
+        eggplantBody = "none";
+        eggplantLeaf = "none";
+        broccoliCrown = "none";
+        broccoliStem = "none";
+        cornCob = "none";
+        cornLeaf = "none";
+    }
+
     if (type === 0) {
-        // Doodle Star
-        return `<path d="M 50,12 C 51,12 58,34 59,36 C 60,38 84,38 85,40 C 86,42 67,54 68,56 C 69,58 74,80 72,82 C 70,84 51,70 49,70 C 47,70 28,84 26,82 C 24,80 29,58 30,56 C 31,54 12,42 13,40 C 14,38 38,38 39,36 C 40,34 47,12 50,12 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
+        // 1. Tomato
+        return `
+            <ellipse cx="50" cy="54" rx="22" ry="18" stroke="${borderStroke}" fill="${tomatoBody}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 50,36 C 45,36 43,30 40,32 C 45,34 48,36 50,36 C 52,36 55,34 60,32 C 57,30 55,36 50,36 Z" stroke="${borderStroke}" fill="${tomatoLeaf}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 50,36 C 47,38 41,36 38,40 C 43,40 47,38 50,36 Z" stroke="${borderStroke}" fill="${tomatoLeaf}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 50,36 C 53,38 59,36 62,40 C 57,40 53,38 50,36 Z" stroke="${borderStroke}" fill="${tomatoLeaf}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 50,36 Q 49,26 44,22" stroke="${borderStroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />
+        `;
     } else if (type === 1) {
-        // Doodle Moon
-        return `<path d="M 64,22 C 45,22 28,36 28,54 C 28,72 45,86 64,86 C 46,81 40,59 51,41 C 56,33 59,27 64,22 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
+        // 2. Carrot
+        const leafLines = `
+            <path d="M 50,32 C 48,22 42,16 46,12 C 50,18 50,26 50,32 Z" stroke="${borderStroke}" fill="${carrotLeaf}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 50,32 C 42,24 36,20 41,15 C 46,20 48,26 50,32 Z" stroke="${borderStroke}" fill="${carrotLeaf}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 50,32 C 58,24 64,20 59,15 C 54,20 52,26 50,32 Z" stroke="${borderStroke}" fill="${carrotLeaf}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+        `;
+        const body = `
+            <path d="M 38,34 C 42,32 58,32 62,34 L 54,78 C 53,82 47,82 46,78 Z" stroke="${borderStroke}" fill="${carrotBody}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 43,44 H 51 M 44,54 H 55 M 46,64 H 53 M 48,72 H 51" stroke="${borderStroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />
+        `;
+        return leafLines + body;
     } else if (type === 2) {
-        // Doodle Saturn
-        const backRing = `<path d="M 23,48 C 30,39 70,39 77,48" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
-        const sphere = `<ellipse cx="50" cy="52" rx="22" ry="18" stroke="${stroke}" fill="${fill}" stroke-width="${width}" />`;
-        const frontRing = `<path d="M 18,52 C 18,59 34,68 50,68 C 66,68 82,59 82,52" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
-        return backRing + sphere + frontRing;
+        // 3. Eggplant
+        return `
+            <path d="M 42,34 C 46,34 50,36 53,40 C 60,48 68,60 62,74 C 57,84 41,84 34,74 C 28,64 34,48 42,34 Z" stroke="${borderStroke}" fill="${eggplantBody}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 42,34 C 38,34 35,30 33,35 C 38,37 40,36 42,34 C 44,36 47,37 52,35 C 50,30 46,34 42,34 Z" stroke="${borderStroke}" fill="${eggplantLeaf}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 42,34 Q 41,24 37,20" stroke="${borderStroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />
+        `;
     } else if (type === 3) {
-        // Doodle Sparkles
-        const sparkle1 = `<path d="M 40,38 Q 40,54 24,54 Q 40,54 40,70 Q 40,54 56,54 Q 40,54 40,38 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
-        const sparkle2 = `<path d="M 68,18 Q 68,28 58,28 Q 68,28 68,38 Q 68,28 78,28 Q 68,28 68,18 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
-        return sparkle1 + sparkle2;
+        // 4. Broccoli
+        const stem = `<path d="M 43,48 L 45,78 C 45,81 55,81 55,78 L 57,48" stroke="${borderStroke}" fill="${broccoliStem}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
+        const crown = `
+            <path d="M 38,48 C 30,48 26,38 34,32 C 32,20 46,16 52,24 C 58,16 72,20 70,32 C 78,38 74,48 66,48 Z" stroke="${borderStroke}" fill="${broccoliCrown}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 40,36 Q 44,34 48,38 M 52,30 Q 56,28 60,32 M 56,38 Q 60,36 64,40" stroke="${borderStroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />
+        `;
+        return stem + crown;
     } else {
-        // Doodle Sun
-        const sphere = `<circle cx="50" cy="50" r="18" stroke="${stroke}" fill="${fill}" stroke-width="${width}" />`;
-        const spiral = `<path d="M 50,50 Q 46,45 50,42 Q 55,40 56,46 Q 57,53 48,54 Q 40,55 42,44 Q 44,36 54,36 Q 64,36 62,50 Q 60,60 46,58" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
-        const rays = `<path d="M 50,22 L 50,13 M 50,78 L 50,87 M 22,50 L 13,50 M 78,50 L 87,50 M 30,30 L 23,23 M 70,70 L 77,77 M 30,70 L 23,77 M 70,30 L 77,23" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
-        return sphere + spiral + rays;
+        // 5. Corn
+        const cob = `<path d="M 44,32 C 38,40 38,62 46,74 C 48,76 52,76 54,74 C 62,62 62,40 56,32 Z" stroke="${borderStroke}" fill="${cornCob}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
+        const kernels = `
+            <path d="M 46,40 H 54 M 44,48 H 56 M 43,56 H 57 M 44,64 H 56 M 46,72 H 54 M 50,32 V 74" stroke="${borderStroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />
+        `;
+        const husks = `
+            <path d="M 38,46 C 32,54 34,70 48,75 C 39,68 38,54 42,38" stroke="${borderStroke}" fill="${cornLeaf}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 62,46 C 68,54 66,70 52,75 C 61,68 62,54 58,38" stroke="${borderStroke}" fill="${cornLeaf}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />
+        `;
+        return cob + kernels + husks;
     }
 }
 
@@ -266,14 +330,14 @@ function getCosmicStickerSvg(index, isSticker) {
     if (!isSticker) {
         return `
             <svg viewBox="0 0 100 100" class="sticker-svg" style="opacity: 0.22; filter: none;">
-                ${getShapeMarkup(index, "#718096", "none", 3)}
+                ${getShapeMarkup(index, "#8C9A8E", "none", 3)}
             </svg>
         `;
     }
     return `
         <svg viewBox="0 0 100 100" class="sticker-svg">
             ${getShapeMarkup(index, "white", "white", 14)}
-            ${getShapeMarkup(index, "#2D3748", "white", 4.5)}
+            ${getShapeMarkup(index, "#2C3E50", "colored", 4.5)}
         </svg>
     `;
 }
@@ -294,7 +358,7 @@ async function refreshApp() {
         
         // 설정 폼에 현재 보드 ID 자동 완성 (DEFAULT인 경우 무작위 코드 생성)
         if (currentBoardId === "DEFAULT") {
-            const randId = "COSMIC-" + Math.floor(1000 + Math.random() * 9000);
+            const randId = "VEGE-" + Math.floor(1000 + Math.random() * 9000);
             setupBoardId.value = randId;
         } else {
             setupBoardId.value = currentBoardId;
@@ -518,7 +582,7 @@ btnCreateBoard.addEventListener("click", async () => {
 
     const newBoard = {
         id: code,
-        title: "우리의 새로운 칭찬판 💖",
+        title: "싱싱한 채소 칭찬판 🥕",
         target_count: 30,
         reward_text: "새로운 선물 지정하기",
         editor_pin: "1234"

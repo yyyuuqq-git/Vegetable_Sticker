@@ -1,24 +1,24 @@
 /* ==========================================
-   스티치 테마 칭찬나라 전역 CSS 디자인 시스템
+   채소가게 테마 칭찬나라 전역 CSS 디자인 시스템
    ========================================== */
 
 /* 1. 디자인 토큰 및 변수 */
 :root {
-    --stitch-primary: #4A5568; /* slate blue-gray */
-    --stitch-primary-dark: #2D3748; /* charcoal */
-    --stitch-light-sky: #E2E8F0;
-    --stitch-pink: #F87171; /* soft pink */
-    --stitch-dark: #1A202C;
-    --stitch-bg-light: #FAF6F0; /* cozy cream */
+    --stitch-primary: #4A7C59; /* organic sage green */
+    --stitch-primary-dark: #2E4F38; /* dark forest green */
+    --stitch-light-sky: #E8F5E9; /* soft lettuce green */
+    --stitch-pink: #E67E22; /* carrot orange */
+    --stitch-dark: #2C3E50; /* dark charcoal/slate */
+    --stitch-bg-light: #FAF8F5; /* cozy warm cream */
     --stitch-card-bg: #FFFFFF;
     
-    --accent-yellow: #F59E0B; /* warm gold */
-    --soft-pink: #FEF2F2;
-    --soft-blue: #EDF2F7;
+    --accent-yellow: #F1C40F; /* ripe corn yellow */
+    --soft-pink: #FFF3E0; /* soft carrot peach */
+    --soft-blue: #EAF2EC; /* soft garden green */
     
-    --text-primary: #2D3748;
-    --text-muted: #718096;
-    --border-color: #CBD5E0;
+    --text-primary: #2C3E50;
+    --text-muted: #7F8C8D;
+    --border-color: #BDC3C7;
     
     --font-app: 'Nunito', 'Jua', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
@@ -33,7 +33,7 @@
 
 body {
     font-family: var(--font-app);
-    background-color: #E2DCD5; /* cozy warm background */
+    background-color: #EAE6DF; /* cozy linen warm background */
     color: var(--text-primary);
     display: flex;
     justify-content: center;
@@ -268,7 +268,7 @@ body {
 
 .reward-banner {
     width: 100%;
-    background-color: rgba(227, 242, 253, 0.5);
+    background-color: rgba(232, 245, 233, 0.6); /* soft vegetable green */
     border-radius: 10px;
     padding: 10px;
     display: flex;
@@ -567,7 +567,7 @@ input:disabled {
 }
 
 .btn-primary:hover {
-    background-color: #24639B;
+    background-color: #3B6547; /* darker organic green */
 }
 
 .btn-secondary {
