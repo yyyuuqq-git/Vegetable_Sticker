@@ -726,6 +726,15 @@ input:disabled {
 .memo-view-date {
     font-size: 11px;
     color: var(--text-muted);
-    align-self: flex-end;
+}
+
+.memo-dates-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+    margin-top: 4px;
+    border-top: 1px dashed rgba(74, 85, 104, 0.15);
+    padding-top: 8px;
 }
 

@@ -104,7 +104,8 @@ const btnMemoSubmit = document.getElementById("btn-memo-submit");
 
 const modalMemoView = document.getElementById("modal-memo-view");
 const viewStickerMemoText = document.getElementById("view-sticker-memo-text");
-const viewStickerDate = document.getElementById("view-sticker-date");
+const viewStickerCreatedAt = document.getElementById("view-sticker-created-at");
+const viewStickerUpdatedAt = document.getElementById("view-sticker-updated-at");
 const btnMemoViewClose = document.getElementById("btn-memo-view-close");
 
 const memoEditArea = document.getElementById("memo-edit-area");
@@ -205,6 +206,7 @@ async function apiGetStickers(boardId) {
 
 // 스티커 부착
 async function apiAddSticker(boardId, index, memo) {
+    const nowISO = new Date().toISOString();
     if (isLocalMode || !supabaseClient) {
         const current = await apiGetStickers(boardId);
         if (!current.some(s => s.sticker_index === index)) {
@@ -212,7 +214,8 @@ async function apiAddSticker(boardId, index, memo) {
                 board_id: boardId, 
                 sticker_index: index, 
                 memo: memo,
-                created_at: new Date().toISOString() 
+                created_at: nowISO,
+                updated_at: nowISO
             });
             localStorage.setItem(`stickers_${boardId}`, JSON.stringify(current));
         }
@@ -221,7 +224,13 @@ async function apiAddSticker(boardId, index, memo) {
         try {
             const { error } = await supabaseClient
                 .from("praise_stickers")
-                .insert({ board_id: boardId, sticker_index: index, memo: memo });
+                .insert({ 
+                    board_id: boardId, 
+                    sticker_index: index, 
+                    memo: memo,
+                    created_at: nowISO,
+                    updated_at: nowISO
+                });
             if (error) throw error;
             return true;
         } catch (e) {
@@ -233,11 +242,13 @@ async function apiAddSticker(boardId, index, memo) {
 
 // 스티커 메모 수정
 async function apiUpdateStickerMemo(boardId, index, memo) {
+    const nowISO = new Date().toISOString();
     if (isLocalMode || !supabaseClient) {
         const current = await apiGetStickers(boardId);
         const sticker = current.find(s => s.sticker_index === index);
         if (sticker) {
             sticker.memo = memo;
+            sticker.updated_at = nowISO;
             localStorage.setItem(`stickers_${boardId}`, JSON.stringify(current));
         }
         return true;
@@ -245,7 +256,10 @@ async function apiUpdateStickerMemo(boardId, index, memo) {
         try {
             const { error } = await supabaseClient
                 .from("praise_stickers")
-                .update({ memo: memo })
+                .update({ 
+                    memo: memo, 
+                    updated_at: nowISO 
+                })
                 .eq("board_id", boardId)
                 .eq("sticker_index", index);
             if (error) throw error;
@@ -551,9 +565,33 @@ async function handleSlotClick(index, isActive) {
         const sticker = currentStickers.find(s => s.sticker_index === index);
         const memoText = sticker && sticker.memo ? sticker.memo : "등록된 칭찬 메모가 없습니다. 🧸";
         const createdDate = sticker && sticker.created_at ? formatDate(sticker.created_at) : "";
+        const updatedDate = sticker && sticker.updated_at ? formatDate(sticker.updated_at) : "";
+
+        // 최초 생성 시간과 최근 수정 시간의 차이가 5초 이상인 경우에만 실제 수정된 것으로 간주
+        const createdTime = sticker && sticker.created_at ? new Date(sticker.created_at).getTime() : 0;
+        const updatedTime = sticker && sticker.updated_at ? new Date(sticker.updated_at).getTime() : 0;
+        const isModified = createdTime && updatedTime && Math.abs(updatedTime - createdTime) > 5000;
+
+        console.log("Sticker click debug details:", {
+            sticker,
+            createdTime,
+            updatedTime,
+            timeDiffMs: Math.abs(updatedTime - createdTime),
+            isModified,
+            createdDate,
+            updatedDate
+        });
 
         viewStickerMemoText.textContent = memoText;
-        viewStickerDate.textContent = createdDate;
+        viewStickerCreatedAt.textContent = createdDate ? `최초 작성: ${createdDate}` : "";
+        
+        if (updatedDate && isModified) {
+            viewStickerUpdatedAt.textContent = `최근 수정: ${updatedDate}`;
+            viewStickerUpdatedAt.classList.remove("hidden");
+        } else {
+            viewStickerUpdatedAt.textContent = "";
+            viewStickerUpdatedAt.classList.add("hidden");
+        }
 
         // 수정/저장 관련 UI 초기화
         document.querySelector("#modal-memo-view .memo-view-content").classList.remove("hidden");
