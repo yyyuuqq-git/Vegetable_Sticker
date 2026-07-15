@@ -29,19 +29,11 @@ if (!isLocalMode) {
 let currentBoardId = localStorage.getItem("current_board_id") || "DEFAULT";
 let currentBoard = null;
 let currentStickers = [];
-let isEditorMode = false;
+let isEditorMode = localStorage.getItem(`is_editor_${currentBoardId}`) === "true";
 let deleteTargetIndex = null;
+let deleteTargetBoardId = null; // 보드 삭제를 위한 변수 추가
 let memoTargetIndex = null;
 let editTargetIndex = null;
-
-// 기본 가상의 보드 데이터 (체험용)
-const defaultBoardData = {
-    id: "DEFAULT",
-    title: "스티치와 함께하는 칭찬판",
-    target_count: 30,
-    reward_text: "맛있는 디저트 데이트! 🍦",
-    editor_pin: "1234"
-};
 
 // 3. HTML DOM 요소
 const loadingSpinner = document.getElementById("loading-spinner");
@@ -60,6 +52,14 @@ const celebrationBanner = document.getElementById("celebration-banner");
 const celebrationRewardDetail = document.getElementById("celebration-reward-detail");
 const stickerGrid = document.getElementById("sticker-grid");
 
+// 사이드바 관련 요소 추가
+const btnMenu = document.getElementById("btn-menu");
+const sidebar = document.getElementById("sidebar");
+const sidebarOverlay = document.getElementById("sidebar-overlay");
+const btnSidebarClose = document.getElementById("btn-sidebar-close");
+const boardListContainer = document.getElementById("board-list");
+const btnAddBoardSidebar = document.getElementById("btn-add-board-sidebar");
+
 // 모달 및 입력 폼 요소
 const modalPin = document.getElementById("modal-pin");
 const inputPin = document.getElementById("input-pin");
@@ -77,6 +77,16 @@ const editPin = document.getElementById("edit-pin");
 const btnSettingsClose = document.getElementById("btn-settings-close");
 const btnSettingsSave = document.getElementById("btn-settings-save");
 
+// 칭찬판 정보 수정 모달 요소 (길게 누르기 연동)
+const modalBoardEdit = document.getElementById("modal-board-edit");
+const editBoardTitle = document.getElementById("edit-board-title");
+const editBoardTargetCount = document.getElementById("edit-board-target-count");
+const editBoardReward = document.getElementById("edit-board-reward");
+const btnBoardEditClose = document.getElementById("btn-board-edit-close");
+const btnBoardEditSave = document.getElementById("btn-board-edit-save");
+
+let editTargetBoard = null;
+
 const modalDelete = document.getElementById("modal-delete");
 const deleteConfirmText = document.getElementById("delete-confirm-text");
 const btnDeleteCancel = document.getElementById("btn-delete-cancel");
@@ -90,6 +100,13 @@ const btnCreateBoard = document.getElementById("btn-create-board");
 const btnShareClose = document.getElementById("btn-share-close");
 
 const welcomeScreen = document.getElementById("welcome-screen");
+const welcomeConnectCard = document.getElementById("welcome-connect-card");
+const welcomeCreateCard = document.getElementById("welcome-create-card");
+const welcomeInputBoardId = document.getElementById("welcome-input-board-id");
+const btnWelcomeConnect = document.getElementById("btn-welcome-connect");
+const btnWelcomeShowCreate = document.getElementById("btn-welcome-show-create");
+const btnWelcomeBack = document.getElementById("btn-welcome-back");
+
 const setupBoardId = document.getElementById("setup-board-id");
 const setupTitle = document.getElementById("setup-title");
 const setupTargetCount = document.getElementById("setup-target-count");
@@ -406,6 +423,264 @@ function getCosmicStickerSvg(index, isSticker) {
 }
 
 // ==========================================
+// 5.5 등록된 보드 목록 관리 및 사이드바 렌더링
+// ==========================================
+
+// 모든 스티커판 목록 조회 (서버 전체 탐색용 - 프라이버시 보호를 위해 TEST- 접두사 보드만 조회)
+async function apiGetAllBoards() {
+    if (isLocalMode || !supabaseClient) {
+        // 로컬스토리지 전체 키 순회
+        const boards = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith("board_")) {
+                try {
+                    const board = JSON.parse(localStorage.getItem(key));
+                    if (board.id.startsWith("TEST-")) {
+                        boards.push(board);
+                    }
+                } catch(e){}
+            }
+        }
+        return boards;
+    } else {
+        try {
+            // Supabase에서 TEST- 로 시작하는 보드만 필터링하여 가져옵니다.
+            const { data, error } = await supabaseClient
+                .from("praise_boards")
+                .select("*")
+                .like("id", "TEST-%")
+                .order("created_at", { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error("전체 보드 조회 실패", e);
+            // 로컬 캐시라도 필터링하여 리턴
+            const boards = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith("board_")) {
+                    try {
+                        const board = JSON.parse(localStorage.getItem(key));
+                        if (board.id.startsWith("TEST-")) {
+                            boards.push(board);
+                        }
+                    } catch(e){}
+                }
+            }
+            return boards;
+        }
+    }
+}
+
+// 보드 이름 수정 API
+async function apiUpdateBoardTitle(boardId, newTitle) {
+    let board = await apiGetBoard(boardId);
+    if (!board) return false;
+    
+    board.title = newTitle;
+    const success = await apiCreateBoard(board);
+    if (success) {
+        addRegisteredBoard(boardId, newTitle);
+        return true;
+    }
+    return false;
+}
+
+// 보드 아이템 롱프레스 핸들러 - 칭찬판 상세 수정 모달 오픈
+async function handleBoardItemLongPress(board) {
+    editTargetBoard = board;
+    const hasPermission = localStorage.getItem(`is_editor_${board.id}`) === "true";
+
+    if (hasPermission) {
+        // 모든 입력 필드 활성화
+        if (editBoardTitle) editBoardTitle.disabled = false;
+        if (editBoardTargetCount) editBoardTargetCount.disabled = false;
+        if (editBoardReward) editBoardReward.disabled = false;
+        if (btnBoardEditSave) btnBoardEditSave.classList.remove("hidden");
+    } else {
+        // 읽기 전용으로 비활성화
+        if (editBoardTitle) editBoardTitle.disabled = true;
+        if (editBoardTargetCount) editBoardTargetCount.disabled = true;
+        if (editBoardReward) editBoardReward.disabled = true;
+        if (btnBoardEditSave) btnBoardEditSave.classList.add("hidden");
+    }
+
+    // 폼 값 세팅
+    if (editBoardTitle) editBoardTitle.value = board.title;
+    if (editBoardTargetCount) editBoardTargetCount.value = board.target_count || 30;
+    if (editBoardReward) editBoardReward.value = board.reward_text || "";
+
+    // 팝업 모달창 오픈
+    if (modalBoardEdit) {
+        modalBoardEdit.classList.remove("hidden");
+    }
+}
+
+// 등록된 보드 목록 관리 헬퍼 함수들
+function getRegisteredBoards() {
+    const list = localStorage.getItem("registered_boards");
+    return list ? JSON.parse(list) : [];
+}
+
+function addRegisteredBoard(boardId, title) {
+    let list = getRegisteredBoards();
+    const existingIndex = list.findIndex(b => b.id === boardId);
+    if (existingIndex !== -1) {
+        list[existingIndex].title = title;
+    } else {
+        list.push({ id: boardId, title: title });
+    }
+    localStorage.setItem("registered_boards", JSON.stringify(list));
+}
+
+function removeRegisteredBoard(boardId) {
+    let list = getRegisteredBoards();
+    list = list.filter(b => b.id !== boardId);
+    localStorage.setItem("registered_boards", JSON.stringify(list));
+    
+    if (currentBoardId === boardId) {
+        if (list.length > 0) {
+            currentBoardId = list[0].id;
+        } else {
+            currentBoardId = "DEFAULT";
+        }
+        localStorage.setItem("current_board_id", currentBoardId);
+    }
+}
+
+// 사이드바 내부 보드 목록 동적 렌더링
+async function renderBoardList() {
+    if (!boardListContainer) return;
+    boardListContainer.innerHTML = "";
+    
+    // 1. 현재 내 로컬 기기 목록(직접 생성/불러온 보드) 가져오기
+    let localList = getRegisteredBoards();
+    
+    // 2. 단일 리스트로 깔끔하게 렌더링
+    if (localList.length === 0) {
+        const emptyMsg = document.createElement("div");
+        emptyMsg.style.fontSize = "11px";
+        emptyMsg.style.color = "var(--text-muted)";
+        emptyMsg.style.textAlign = "center";
+        emptyMsg.style.padding = "10px 0";
+        emptyMsg.textContent = "등록된 스티커판이 없습니다. 🧸";
+        boardListContainer.appendChild(emptyMsg);
+    } else {
+        localList.forEach(board => {
+            const item = createBoardItemDOM(board, true);
+            boardListContainer.appendChild(item);
+        });
+    }
+}
+
+// 보드 아이템 DOM 요소 생성 헬퍼
+function createBoardItemDOM(board, isLocal) {
+    const isActive = board.id === currentBoardId;
+    const item = document.createElement("div");
+    item.className = `board-item ${isActive ? "active" : ""}`;
+    
+    const hasPermission = localStorage.getItem(`is_editor_${board.id}`) === "true";
+
+    // 나의 칭찬판 목록이며 + 동시에 해당 보드의 편집 권한(여자친구 PIN)을 갖고 있을 때만 삭제(휴지통) 아이콘 노출
+    const deleteButtonHtml = (isLocal && hasPermission) ? `
+        <button class="btn-delete-board" title="삭제">
+            <span class="material-icons" style="font-size: 16px;">delete</span>
+        </button>
+    ` : '';
+
+    item.innerHTML = `
+        <div class="board-item-info">
+            <span class="board-item-title">${board.title}</span>
+            <span class="board-item-code">코드: ${board.id}</span>
+        </div>
+        ${deleteButtonHtml}
+    `;
+
+    // 1. 클릭 시 전환 이벤트
+    item.addEventListener("click", async () => {
+        if (isActive) return;
+        
+        loadingSpinner.classList.remove("hidden");
+        sidebar.classList.remove("open");
+        sidebarOverlay.classList.add("hidden");
+        
+        currentBoardId = board.id;
+        localStorage.setItem("current_board_id", currentBoardId);
+        isEditorMode = localStorage.getItem(`is_editor_${board.id}`) === "true"; // 해당 보드의 기존 인증 상태 복원
+        updateRoleUI();
+        await refreshApp();
+        
+        const newUrl = `${window.location.origin}${window.location.pathname}?board=${board.id}`;
+        window.history.replaceState({ path: newUrl }, "", newUrl);
+    });
+
+    // 2. 롱프레스 감지 이벤트 (모바일 및 데스크톱)
+    let pressTimer = null;
+    let isLongPress = false;
+
+    const startPress = (e) => {
+        if (e.type === 'mousedown' && e.button !== 0) return;
+        isLongPress = false;
+        pressTimer = setTimeout(() => {
+            isLongPress = true;
+            handleBoardItemLongPress(board);
+        }, 700);
+    };
+
+    const cancelPress = () => {
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+    };
+
+    const endPress = (e) => {
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+        if (isLongPress) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+
+    item.addEventListener("mousedown", startPress);
+    item.addEventListener("mouseup", endPress);
+    item.addEventListener("mouseleave", cancelPress);
+
+    item.addEventListener("touchstart", startPress, { passive: true });
+    item.addEventListener("touchend", endPress, { passive: false });
+    item.addEventListener("touchcancel", cancelPress, { passive: true });
+    item.addEventListener("touchmove", cancelPress, { passive: true });
+
+    // 3. 삭제 버튼 클릭 (완전 삭제 - 편집 권한 보유 시에만 작동)
+    if (isLocal && hasPermission) {
+        const btnDelete = item.querySelector(".btn-delete-board");
+        if (btnDelete) {
+            // 모든 이벤트 버블링 방지 (상위 board-item의 롱프레스/클릭 간섭 완전 차단)
+            btnDelete.addEventListener("mousedown", (e) => e.stopPropagation());
+            btnDelete.addEventListener("mouseup", (e) => e.stopPropagation());
+            btnDelete.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
+            btnDelete.addEventListener("touchend", (e) => e.stopPropagation(), { passive: true });
+
+            btnDelete.addEventListener("click", (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                // 커스텀 모달로 삭제 확인 (네이티브 confirm() 대신 앱 내 모달 사용)
+                deleteTargetBoardId = board.id;
+                deleteTargetIndex = null; // 스티커 삭제가 아님을 명시
+                deleteConfirmText.textContent = `'${board.title}' 판을 삭제하시겠습니까?\n(실제 데이터와 스티커가 모두 영구 삭제됩니다.)`;
+                modalDelete.classList.remove("hidden");
+            });
+        }
+    }
+
+    return item;
+}
+
+// ==========================================
 // 6. UI 업데이트 및 렌더링 로직
 // ==========================================
 
@@ -432,6 +707,10 @@ async function refreshApp() {
     // 보드가 정상적으로 로드된 경우 설정창 숨기고 콘텐츠 노출
     welcomeScreen.classList.add("hidden");
     currentBoard = board;
+
+    // 로컬 보드 목록 관리 및 갱신
+    addRegisteredBoard(board.id, board.title);
+    renderBoardList();
 
     // 2. 스티커 정보 로드
     currentStickers = await apiGetStickers(currentBoardId);
@@ -639,19 +918,25 @@ async function handleSlotLongPress(index, isActive) {
 // ==========================================
 function updateRoleUI() {
     if (isEditorMode) {
-        roleBanner.className = "role-banner editor-mode";
-        roleIcon.textContent = "edit";
-        roleText.textContent = "여자친구 모드 (스티커 부착 가능)";
-        btnToggleRole.textContent = "로그아웃";
+        if (roleBanner) roleBanner.className = "role-banner editor-mode";
+        if (roleIcon) roleIcon.textContent = "edit";
+        if (roleText) roleText.textContent = "여자친구 모드 (스티커 부착 가능)";
+        if (btnToggleRole) {
+            btnToggleRole.innerHTML = `<span id="role-icon" class="material-icons">edit</span><span id="role-text">여자친구 모드 (부착 가능)</span>`;
+            btnToggleRole.className = "sidebar-role-btn editor-mode";
+        }
 
         // 설정 모달 내 필드 활성화
         document.querySelectorAll(".editor-only-field").forEach(el => el.disabled = false);
         btnSettingsSave.classList.remove("hidden");
     } else {
-        roleBanner.className = "role-banner reader-mode";
-        roleIcon.textContent = "visibility";
-        roleText.textContent = "남자친구 모드 (조회 전용)";
-        btnToggleRole.textContent = "편집 전환";
+        if (roleBanner) roleBanner.className = "role-banner reader-mode";
+        if (roleIcon) roleIcon.textContent = "visibility";
+        if (roleText) roleText.textContent = "남자친구 모드 (조회 전용)";
+        if (btnToggleRole) {
+            btnToggleRole.innerHTML = `<span id="role-icon" class="material-icons">visibility</span><span id="role-text">남자친구 모드 (조회 전용)</span>`;
+            btnToggleRole.className = "sidebar-role-btn reader-mode";
+        }
 
         // 설정 모달 내 필드 비활성화
         document.querySelectorAll(".editor-only-field").forEach(el => el.disabled = true);
@@ -685,6 +970,7 @@ btnPinSubmit.addEventListener("click", () => {
 
     if (pin === requiredPin) {
         isEditorMode = true;
+        localStorage.setItem(`is_editor_${currentBoardId}`, "true"); // 로컬스토리지에 인증 승인 기록
         inputPin.value = "";
         pinError.classList.add("hidden");
         modalPin.classList.add("hidden");
@@ -706,6 +992,7 @@ btnPinCancel.addEventListener("click", () => {
 btnToggleRole.addEventListener("click", () => {
     if (isEditorMode) {
         isEditorMode = false;
+        localStorage.removeItem(`is_editor_${currentBoardId}`); // 로그아웃 시 인증 승인 기록 삭제
         updateRoleUI();
         refreshApp();
         showToast("조회 전용 모드로 복귀했습니다.");
@@ -767,6 +1054,7 @@ btnCreateBoard.addEventListener("click", async () => {
     if (success) {
         currentBoardId = code;
         localStorage.setItem("current_board_id", code);
+        localStorage.setItem(`is_editor_${code}`, "true"); // 신규 생성 시 즉시 자동 로그인 세션 등록
         inputCreateBoard.value = "";
         isEditorMode = true; // 새로 만든 판은 즉시 편집자 권한 부여
         updateRoleUI();
@@ -848,12 +1136,89 @@ btnSettingsSave.addEventListener("click", async () => {
     }
 });
 
-// 스티커 제거 확인 처리
-btnDeleteConfirm.addEventListener("click", async () => {
-    if (deleteTargetIndex === null) return;
+// 칭찬판 정보 수정 저장 처리 (길게 누르기 모달)
+btnBoardEditSave.addEventListener("click", async () => {
+    if (!editTargetBoard) return;
+    const hasPermission = localStorage.getItem(`is_editor_${editTargetBoard.id}`) === "true";
+    if (!hasPermission) return;
+
+    const count = parseInt(editBoardTargetCount.value);
+    if (isNaN(count) || count < 1 || count > 100) {
+        showToast("올바른 목표 개수(1~100)를 입력하세요.");
+        return;
+    }
 
     loadingSpinner.classList.remove("hidden");
+    if (modalBoardEdit) modalBoardEdit.classList.add("hidden");
+
+    const updatedBoard = {
+        ...editTargetBoard,
+        title: editBoardTitle.value.trim() || editTargetBoard.title,
+        target_count: count,
+        reward_text: editBoardReward.value.trim()
+    };
+
+    const success = await apiCreateBoard(updatedBoard);
+    if (success) {
+        // 로컬 레지스트리 목록 캐시 이름 갱신
+        addRegisteredBoard(editTargetBoard.id, updatedBoard.title);
+
+        if (editTargetBoard.id === currentBoardId) {
+            currentBoard = updatedBoard;
+            await refreshApp();
+        } else {
+            renderBoardList();
+            loadingSpinner.classList.add("hidden");
+        }
+        showToast("채소판이 성공적으로 수정되었습니다! ✨");
+        editTargetBoard = null;
+    } else {
+        showToast("설정 저장에 실패했습니다.");
+        loadingSpinner.classList.add("hidden");
+        if (modalBoardEdit) modalBoardEdit.classList.remove("hidden");
+    }
+});
+
+btnBoardEditClose.addEventListener("click", () => {
+    editTargetBoard = null;
+    if (modalBoardEdit) modalBoardEdit.classList.add("hidden");
+});
+
+// 스티커 제거 또는 스티커판 삭제 확인 처리
+btnDeleteConfirm.addEventListener("click", async () => {
+    loadingSpinner.classList.remove("hidden");
     modalDelete.classList.add("hidden");
+
+    // (A) 스티커판(보드) 삭제 처리
+    if (deleteTargetBoardId) {
+        const boardIdToDelete = deleteTargetBoardId;
+        deleteTargetBoardId = null;
+        const wasActive = boardIdToDelete === currentBoardId;
+
+        await apiDeleteBoard(boardIdToDelete);
+        removeRegisteredBoard(boardIdToDelete);
+
+        if (wasActive) {
+            sidebar.classList.remove("open");
+            sidebarOverlay.classList.add("hidden");
+            isEditorMode = localStorage.getItem(`is_editor_${currentBoardId}`) === "true";
+            updateRoleUI();
+            const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
+            window.history.replaceState({ path: newUrl }, "", newUrl);
+            await refreshApp();
+        } else {
+            renderBoardList();
+            loadingSpinner.classList.add("hidden");
+        }
+        showToast("스티커판이 완전히 삭제되었습니다.");
+        return;
+    }
+
+    // (B) 스티커 제거 처리
+    if (deleteTargetIndex === null) {
+        loadingSpinner.classList.add("hidden");
+        return;
+    }
 
     const success = await apiRemoveSticker(currentBoardId, deleteTargetIndex);
     if (success) {
@@ -868,6 +1233,7 @@ btnDeleteConfirm.addEventListener("click", async () => {
 
 btnDeleteCancel.addEventListener("click", () => {
     deleteTargetIndex = null;
+    deleteTargetBoardId = null;
     modalDelete.classList.add("hidden");
 });
 
@@ -962,6 +1328,41 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("current_board_id", currentBoardId);
     }
 
+    // 사이드바 토글 및 기능 바인딩
+    if (btnMenu) {
+        btnMenu.addEventListener("click", () => {
+            sidebar.classList.add("open");
+            sidebarOverlay.classList.remove("hidden");
+            renderBoardList(); // 열릴 때 최신 목록 렌더링
+        });
+    }
+
+    if (btnSidebarClose) {
+        btnSidebarClose.addEventListener("click", () => {
+            sidebar.classList.remove("open");
+            sidebarOverlay.classList.add("hidden");
+        });
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener("click", () => {
+            sidebar.classList.remove("open");
+            sidebarOverlay.classList.add("hidden");
+        });
+    }
+    
+    if (btnAddBoardSidebar) {
+        btnAddBoardSidebar.addEventListener("click", () => {
+            sidebar.classList.remove("open");
+            sidebarOverlay.classList.add("hidden");
+            
+            // 공유/생성 모달을 열고 새 보드 생성 인풋에 포커싱
+            modalShare.classList.remove("hidden");
+            inputCreateBoard.value = "";
+            inputCreateBoard.focus();
+        });
+    }
+
     updateRoleUI();
     refreshApp();
 
@@ -1005,6 +1406,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (success) {
             currentBoardId = code;
             localStorage.setItem("current_board_id", code);
+            localStorage.setItem(`is_editor_${code}`, "true"); // 최초 개설 시 로컬에 자동 로그인 세션 활성화
             // 생성 시에는 자동으로 편집자 모드 승인
             isEditorMode = true;
             updateRoleUI();
@@ -1020,6 +1422,74 @@ document.addEventListener("DOMContentLoaded", () => {
             loadingSpinner.classList.add("hidden");
         }
     });
+
+    // 2.5 웰컴 스크린 접속하기 처리
+    if (btnWelcomeConnect) {
+        btnWelcomeConnect.addEventListener("click", async () => {
+            const code = welcomeInputBoardId.value.trim().toUpperCase();
+            if (!code) {
+                showToast("공유 코드를 입력해 주세요.");
+                return;
+            }
+
+            loadingSpinner.classList.remove("hidden");
+            const board = await apiGetBoard(code);
+            if (board) {
+                currentBoardId = code;
+                localStorage.setItem("current_board_id", code);
+                welcomeInputBoardId.value = "";
+                isEditorMode = false; // 새로운 보드로 연결할 때는 기본 뷰어 모드로 안전화
+                updateRoleUI();
+                await refreshApp();
+                showToast(`칭찬판 '${board.title}'을 성공적으로 불러왔습니다!`);
+                
+                // 브라우저 주소창 URL 업데이트
+                const newUrl = `${window.location.origin}${window.location.pathname}?board=${code}`;
+                window.history.replaceState({ path: newUrl }, "", newUrl);
+            } else {
+                showToast("존재하지 않는 칭찬판 공유 코드입니다.");
+                loadingSpinner.classList.add("hidden");
+            }
+        });
+    }
+
+    // 2.6 웰컴 스크린 새 스티커판 만들기 화면 전환
+    if (btnWelcomeShowCreate) {
+        btnWelcomeShowCreate.addEventListener("click", async () => {
+            loadingSpinner.classList.remove("hidden");
+
+            // 고유한 난수 코드 생성 (예: VEGE-4829)
+            let finalCode = "";
+            while (true) {
+                const randNum = Math.floor(1000 + Math.random() * 9000);
+                const tempCode = `VEGE-${randNum}`;
+                const existing = await apiGetBoard(tempCode);
+                if (!existing) {
+                    finalCode = tempCode;
+                    break;
+                }
+            }
+
+            setupBoardId.value = finalCode;
+            setupTitle.value = "싱싱 채소가게 칭찬판 🥕";
+            setupTargetCount.value = "30";
+            setupReward.value = "맛있는 디저트 데이트! 🍦";
+            setupPin.value = "1234";
+
+            if (welcomeConnectCard) welcomeConnectCard.classList.add("hidden");
+            if (welcomeCreateCard) welcomeCreateCard.classList.remove("hidden");
+            
+            loadingSpinner.classList.add("hidden");
+        });
+    }
+
+    // 2.7 웰컴 스크린 생성 화면에서 이전(접속) 화면으로 돌아가기
+    if (btnWelcomeBack) {
+        btnWelcomeBack.addEventListener("click", () => {
+            if (welcomeCreateCard) welcomeCreateCard.classList.add("hidden");
+            if (welcomeConnectCard) welcomeConnectCard.classList.remove("hidden");
+        });
+    }
 
     // 3. 초대 링크 복사 처리
     const btnCopyLink = document.getElementById("btn-copy-link");
