@@ -8,3 +8,8 @@
 - **CRITICAL**: Never modify, add stickers to, or delete stickers from active production boards (like `TEST-COSMIC-BOARD` or any user-created active boards).
 - When conducting automated browser tests or manual validation, always create a new temporary test board (following the `TEST-BOARD-XXXX` convention) to perform the tests, or test in a local-only mode that does not sync to the live database if possible.
 - Never alter the state of the live user sticker board.
+
+## Rule 3: Use Test Project for All Testing
+- **CRITICAL**: All browser testing, localhost serving, and automated verification must be performed using the **test project** located at `c:\Users\user\Desktop\칭찬스티커 (테스트)`.
+- Never open localhost from `칭찬스티커 (달)` or `칭찬스티커 (채소가게)`. Always use `칭찬스티커 (테스트)` for local development servers.
+- Never run browser subagent tests or any automated tests against the live deployed sites (`yyyuuqq-git.github.io/sticker/` or `yyyuuqq-git.github.io/Vegetable_Sticker/`). Test exclusively on localhost using the test project.
