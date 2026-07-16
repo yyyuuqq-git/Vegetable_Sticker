@@ -23,7 +23,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- 커스텀 CSS (모바일 캐시 방지) -->
-    <link rel="stylesheet" href="style.css?v=1.2.6">
+    <link rel="stylesheet" href="style.css?v=1.2.7">
 </head>
 
 <body>
@@ -127,7 +127,7 @@
             <!-- 칭찬판 요약 카드 -->
             <section class="summary-card">
                 <h2 id="board-title" class="board-title">채소가게 칭찬판</h2>
-                <div id="board-code-display" class="board-code-display" style="display: none;">보드 코드: DEFAULT</div>
+                <div id="board-code-display" class="board-code-display">보상: 없음</div>
 
                 <div class="progress-info">
                     <span class="progress-label">칭찬 스티커 모으기</span>
@@ -136,11 +136,6 @@
 
                 <div class="progress-bar-container">
                     <div id="progress-bar-fill" class="progress-bar-fill"></div>
-                </div>
-
-                <div id="reward-banner" class="reward-banner hidden">
-                    <span class="material-icons reward-icon">card_giftcard</span>
-                    <span id="reward-text" class="reward-text">완료 보상: 맛있는 디저트 데이트! 🍦</span>
                 </div>
             </section>
 
@@ -335,7 +330,7 @@
     <div id="toast" class="toast hidden"></div>
 
     <!-- 커스텀 JS (모바일 기기 브라우저 캐시 방지) -->
-    <script src="app.js?v=1.2.1"></script>
+    <script src="app.js?v=1.2.2"></script>
 </body>
 
 </html>

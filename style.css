@@ -266,26 +266,6 @@ body {
     transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.reward-banner {
-    width: 100%;
-    background-color: rgba(232, 245, 233, 0.6); /* soft vegetable green */
-    border-radius: 10px;
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.reward-icon {
-    color: var(--stitch-primary);
-    font-size: 18px;
-}
-
-.reward-text {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--stitch-primary-dark);
-}
 
 /* 9. 축하 배너 */
 .celebration-banner {
@@ -848,6 +828,10 @@ input:disabled {
 .board-item-code {
     font-size: 10px;
     color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
 }
 
 /* 보드 삭제 버튼 */

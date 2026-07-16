@@ -46,8 +46,6 @@ const boardTitle = document.getElementById("board-title");
 const boardCodeDisplay = document.getElementById("board-code-display");
 const progressCount = document.getElementById("progress-count");
 const progressBarFill = document.getElementById("progress-bar-fill");
-const rewardBanner = document.getElementById("reward-banner");
-const rewardText = document.getElementById("reward-text");
 const celebrationBanner = document.getElementById("celebration-banner");
 const celebrationRewardDetail = document.getElementById("celebration-reward-detail");
 const stickerGrid = document.getElementById("sticker-grid");
@@ -522,7 +520,7 @@ async function apiUpdateBoardTitle(boardId, newTitle) {
     board.title = newTitle;
     const result = await apiCreateBoard(board);
     if (result.success) {
-        addRegisteredBoard(boardId, newTitle);
+        addRegisteredBoard(boardId, newTitle, board.reward_text);
         return true;
     }
     console.error("보드 이름 수정 실패:", result.error);
@@ -565,13 +563,14 @@ function getRegisteredBoards() {
     return list ? JSON.parse(list) : [];
 }
 
-function addRegisteredBoard(boardId, title) {
+function addRegisteredBoard(boardId, title, rewardText) {
     let list = getRegisteredBoards();
     const existingIndex = list.findIndex(b => b.id === boardId);
     if (existingIndex !== -1) {
         list[existingIndex].title = title;
+        list[existingIndex].reward_text = rewardText;
     } else {
-        list.push({ id: boardId, title: title });
+        list.push({ id: boardId, title: title, reward_text: rewardText });
     }
     localStorage.setItem("registered_boards", JSON.stringify(list));
 }
@@ -632,7 +631,7 @@ function createBoardItemDOM(board, isLocal) {
     item.innerHTML = `
         <div class="board-item-info">
             <span class="board-item-title">${board.title}</span>
-            <span class="board-item-code">코드: ${board.id}</span>
+            <span class="board-item-code">보상: ${board.reward_text || '없음'}</span>
         </div>
         ${deleteButtonHtml}
     `;
@@ -806,7 +805,7 @@ async function refreshApp() {
     currentBoard = board;
 
     // 로컬 보드 목록 관리 및 갱신
-    addRegisteredBoard(board.id, board.title);
+    addRegisteredBoard(board.id, board.title, board.reward_text);
     renderBoardList();
 
     // 2. 스티커 정보 로드
@@ -815,7 +814,7 @@ async function refreshApp() {
 
     // 3. 헤더 및 요약 카드 업데이트
     boardTitle.textContent = currentBoard.title;
-    boardCodeDisplay.textContent = `보드 코드: ${currentBoard.id}`;
+    boardCodeDisplay.textContent = `보상: ${currentBoard.reward_text || '없음'}`;
 
     const targetCount = currentBoard.target_count;
     const completedCount = currentStickers.length;
@@ -823,14 +822,6 @@ async function refreshApp() {
 
     const percentage = Math.min((completedCount / targetCount) * 100, 100);
     progressBarFill.style.width = `${percentage}%`;
-
-    // 보상 배너 처리
-    if (currentBoard.reward_text) {
-        rewardText.textContent = `완료 보상: ${currentBoard.reward_text}`;
-        rewardBanner.classList.remove("hidden");
-    } else {
-        rewardBanner.classList.add("hidden");
-    }
 
     // 축하 배너 처리
     if (completedCount >= targetCount) {
@@ -1248,7 +1239,7 @@ btnBoardEditSave.addEventListener("click", async () => {
 
     const result = await apiCreateBoard(updatedBoard);
     // 로컬 캐시에는 apiCreateBoard 내부에서 이미 저장됨 → 로컬 상태는 항상 갱신
-    addRegisteredBoard(editTargetBoard.id, updatedBoard.title);
+    addRegisteredBoard(editTargetBoard.id, updatedBoard.title, updatedBoard.reward_text);
 
     if (editTargetBoard.id === currentBoardId) {
         currentBoard = updatedBoard;
