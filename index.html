@@ -1,50 +1,52 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>싱싱 채소가게 칭찬판</title>
-    
+    <title>채소가게 칭찬판</title>
+
     <!-- 모바일 PWA 및 웹앱 전체화면 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#4A5568">
-    
+
     <!-- 구글 폰트 (귀엽고 둥근 글꼴 Jua & Nunito) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <!-- 머티리얼 아이콘 CDN -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
+
     <!-- Supabase JS Client CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+
     <!-- 커스텀 CSS (모바일 캐시 방지) -->
-    <link rel="stylesheet" href="style.css?v=1.1.0">
+    <link rel="stylesheet" href="style.css?v=1.2.6">
 </head>
+
 <body>
     <div class="app-container">
         <!-- 0. 사이드바 (서랍 메뉴) -->
         <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
         <aside id="sidebar" class="sidebar">
             <div class="sidebar-header">
-                <div class="sidebar-title">🥦 채소판 목록</div>
+                <div class="sidebar-title">🥦 스티커 판 목록</div>
                 <button id="btn-sidebar-close" class="icon-button" title="메뉴 닫기">
                     <span class="material-icons">close</span>
                 </button>
             </div>
-            
+
             <div class="sidebar-body">
                 <div id="board-list" class="board-list">
                     <!-- 자바스크립트로 동적 렌더링 -->
                 </div>
-                <button id="btn-add-board-sidebar" class="btn-add-board" title="새 채소판 추가">
-                    <span class="material-icons">add</span> 새 채소판 만들기
+                <button id="btn-add-board-sidebar" class="btn-add-board" title="새 스티커판 추가">
+                    <span class="material-icons">add</span> 새 스티커판 만들기
                 </button>
             </div>
-            
+
             <div class="sidebar-footer">
                 <div class="sidebar-role-area">
                     <button id="btn-toggle-role" class="sidebar-role-btn reader-mode">
@@ -66,10 +68,10 @@
         <!-- 1. 헤더 (상단 바) -->
         <header class="app-header">
             <div class="header-left">
-                <button id="btn-menu" class="icon-button" title="메뉴" style="margin-right: 8px;">
-                    <span class="material-icons">menu</span>
+                <button id="btn-menu" class="icon-button" title="메뉴" style="margin-right: 8px; font-size: 20px;">
+                    🥦
                 </button>
-                <h1 class="logo">🥦 싱싱 채소가게</h1>
+                <h1 class="logo">채소가게</h1>
             </div>
         </header>
 
@@ -80,99 +82,58 @@
 
         <!-- 1.5 초기 설정 화면 (처음 접속하거나 새 보드 생성 시 노출) -->
         <div id="welcome-screen" class="welcome-screen hidden">
-            <!-- A. 공유코드 입력 접속 화면 -->
-            <div id="welcome-connect-card" class="welcome-card">
+            <div class="welcome-card">
                 <div class="welcome-header">
-                    <span class="material-icons welcome-logo-icon">eco</span>
-                    <h2>싱싱 채소가게 시작하기</h2>
-                    <p>커플만의 공유 코드를 입력하여 칭찬판에 접속하세요.</p>
-                </div>
-                
-                <div class="form-group">
-                    <label for="welcome-input-board-id">공유 코드 입력</label>
-                    <input type="text" id="welcome-input-board-id" placeholder="예: TEST-VEG-1234" style="text-transform: uppercase;">
-                </div>
-                
-                <button id="btn-welcome-connect" class="btn btn-primary" style="margin-top: 8px; width: 100%;">
-                    칭찬판 접속하기 🚀
-                </button>
-                
-                <div style="text-align: center; margin: 12px 0; color: var(--text-muted); font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <span style="flex: 1; height: 1px; background-color: var(--border-color);"></span>
-                    <span>또는</span>
-                    <span style="flex: 1; height: 1px; background-color: var(--border-color);"></span>
-                </div>
-                
-                <button id="btn-welcome-show-create" class="btn btn-secondary" style="width: 100%; border: 1.5px dashed var(--stitch-primary); background-color: transparent; color: var(--stitch-primary);">
-                    새 채소판 만들기 🥕
-                </button>
-            </div>
-
-            <!-- B. 스티커판 생성하기 화면 -->
-            <div id="welcome-create-card" class="welcome-card hidden">
-                <div class="welcome-header">
-                    <span class="material-icons welcome-logo-icon">add_circle_outline</span>
-                    <h2>새 채소판 만들기</h2>
+                    <span class="material-icons welcome-logo-icon">auto_awesome</span>
+                    <h2>채소가게 시작하기</h2>
                     <p>커플만의 실시간 칭찬판 정보와 비밀번호를 설정해 주세요.</p>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="setup-board-id">공유 코드 (Board Code)</label>
                     <input type="text" id="setup-board-id" style="text-transform: uppercase;">
                     <small class="helper-text">서로 연결할 때 사용하는 코드입니다. (자동 생성됨)</small>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="setup-title">칭찬판 제목</label>
                     <input type="text" id="setup-title" placeholder="예: 민지의 착한 일 판 💖">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="setup-target-count">목표 스티커 개수 (20 ~ 50)</label>
                     <input type="number" id="setup-target-count" value="30" min="1" max="100">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="setup-reward">달성 완료 보상</label>
                     <input type="text" id="setup-reward" placeholder="예: 맛있는 디저트 데이트! 🍦">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="setup-pin">편집용 비밀번호 PIN</label>
-                    <input type="password" id="setup-pin" placeholder="숫자 4자리 권장" value="1234">
+                    <input type="password" id="setup-pin" placeholder="숫자 4자리 권장">
                     <small class="helper-text">여자친구가 스티커를 붙일 때 사용할 비밀번호입니다.</small>
                 </div>
-                
+
                 <button id="btn-setup-submit" class="btn btn-primary" style="margin-top: 12px; width: 100%;">
                     칭찬판 만들기 🚀
-                </button>
-                
-                <button id="btn-welcome-back" class="btn btn-secondary" style="margin-top: 8px; width: 100%;">
-                    이전으로 ↩️
                 </button>
             </div>
         </div>
 
         <!-- 2. 메인 컨텐츠 영역 -->
         <main class="app-content hidden">
-            <!-- 역할 전환 배너 (사이드바로 이동됨 - 이 영역은 요약 정보만 표시) -->
-            <div id="role-banner" class="role-banner reader-mode hidden">
-                <div class="role-status">
-                    <span id="role-icon-banner" class="material-icons">visibility</span>
-                    <span id="role-text-banner" class="status-label">남자친구 모드 (조회 전용)</span>
-                </div>
-            </div>
-
             <!-- 칭찬판 요약 카드 -->
             <section class="summary-card">
-                <h2 id="board-title" class="board-title">싱싱 채소가게 칭찬판</h2>
-                <div id="board-code-display" class="board-code-display">보드 코드: DEFAULT</div>
-                
+                <h2 id="board-title" class="board-title">채소가게 칭찬판</h2>
+                <div id="board-code-display" class="board-code-display" style="display: none;">보드 코드: DEFAULT</div>
+
                 <div class="progress-info">
                     <span class="progress-label">칭찬 스티커 모으기</span>
                     <span id="progress-count" class="progress-count">0 / 30 개</span>
                 </div>
-                
+
                 <div class="progress-bar-container">
                     <div id="progress-bar-fill" class="progress-bar-fill"></div>
                 </div>
@@ -209,7 +170,7 @@
             <h3 class="modal-title">여자친구 권한 인증</h3>
             <p class="modal-desc">칭찬스티커를 추가하거나 제거할 수 있는 비밀번호 PIN을 입력하세요.</p>
             <div class="form-group">
-                <input type="password" id="input-pin" placeholder="비밀번호 PIN (기본값: 1234)" maxlength="8">
+                <input type="password" id="input-pin" placeholder="비밀번호 PIN 입력" maxlength="8">
                 <span id="pin-error" class="error-text hidden">비밀번호가 올바르지 않습니다.</span>
             </div>
             <div class="modal-actions">
@@ -223,12 +184,13 @@
     <div id="modal-settings" class="modal-overlay hidden">
         <div class="modal-content scrollable">
             <h3 class="modal-title">채소가게 칭찬판 설정</h3>
-            
+
             <!-- 공유판 불러오기 -->
             <div class="settings-section">
                 <h4 class="section-title">🔗 공유 스티커판 불러오기</h4>
                 <div class="input-row">
-                    <input type="text" id="input-switch-board" placeholder="불러올 코드 입력" style="text-transform: uppercase;">
+                    <input type="text" id="input-switch-board" placeholder="불러올 코드 입력"
+                        style="text-transform: uppercase;">
                     <button id="btn-switch-board" class="btn btn-primary btn-sm">이동</button>
                 </div>
             </div>
@@ -254,6 +216,16 @@
                     <label for="edit-pin">편집용 비밀번호 PIN</label>
                     <input type="password" id="edit-pin" class="editor-only-field" disabled>
                 </div>
+                <div class="form-group">
+                    <label for="edit-reader-name">조회 모드 명칭 (남자친구 모드)</label>
+                    <input type="text" id="edit-reader-name" class="editor-only-field"
+                        placeholder="기본값: 남자친구 모드 (조회 전용)" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="edit-editor-name">편집 모드 명칭 (여자친구 모드)</label>
+                    <input type="text" id="edit-editor-name" class="editor-only-field"
+                        placeholder="기본값: 여자친구 모드 (부착 가능)" disabled>
+                </div>
             </div>
 
             <div class="modal-actions">
@@ -278,33 +250,14 @@
     <!-- D. 공유 및 생성 모달 -->
     <div id="modal-share" class="modal-overlay hidden">
         <div class="modal-content">
-            <h3 class="modal-title">🔗 커플 공유하기</h3>
-            <p class="modal-desc">현재 사용 중인 칭찬판 코드는 다음과 같습니다. 여자친구의 기기에서 이 코드를 입력해 함께 실시간으로 사용할 수 있습니다.</p>
-            
-            <div class="share-code-box">
-                <span id="share-code-text" class="share-code">DEFAULT</span>
-                <button id="btn-copy-code" class="icon-button" title="복사">
-                    <span class="material-icons">content_copy</span>
-                </button>
-            </div>
-            
-            <div class="form-group" style="margin-top: 8px;">
-                <label>초대 링크 (스마트폰 바로 접속용)</label>
-                <div class="input-row">
-                    <input type="text" id="share-link-input" readonly style="background-color: #F3F4F6; font-size: 11px; cursor: default;">
-                    <button id="btn-copy-link" class="btn btn-primary btn-sm">링크 복사</button>
-                </div>
+            <h3 class="modal-title">🆕 새 칭찬판 만들기</h3>
+            <p class="modal-desc">새로 만들 칭찬판의 이름을 입력해 주세요.</p>
+
+            <div class="form-group" style="margin-top: 16px;">
+                <input type="text" id="input-create-board-title" placeholder="칭찬판 이름 (예: 우리의 새로운 칭찬판 💖)">
             </div>
 
-            <hr class="divider">
-
-            <h4 class="section-title">🆕 새 칭찬판 만들기</h4>
-            <p class="modal-desc">커플만의 공유할 새로운 판 코드를 직접 만들 수 있습니다.</p>
-            <div class="form-group">
-                <input type="text" id="input-create-board" placeholder="예: LOVE-BOARD-7" style="text-transform: uppercase;">
-            </div>
-            
-            <div class="modal-actions">
+            <div class="modal-actions" style="margin-top: 24px;">
                 <button id="btn-share-close" class="btn btn-secondary">닫기</button>
                 <button id="btn-create-board" class="btn btn-primary">생성 및 이동</button>
             </div>
@@ -317,7 +270,8 @@
             <h3 class="modal-title">칭찬 한마디 작성하기 ✍️</h3>
             <p class="modal-desc">어떤 이유로 칭찬 스티커를 붙이는지 메모를 남겨주세요.</p>
             <div class="form-group">
-                <textarea id="input-sticker-memo" placeholder="예: 오늘도 집안일을 도와줘서 고마워! 💕" rows="3" class="memo-textarea" maxlength="200"></textarea>
+                <textarea id="input-sticker-memo" placeholder="예: 오늘도 집안일을 도와줘서 고마워! 💕" rows="3" class="memo-textarea"
+                    maxlength="200"></textarea>
             </div>
             <div class="modal-actions">
                 <button id="btn-memo-cancel" class="btn btn-secondary">취소</button>
@@ -342,6 +296,7 @@
                 <textarea id="input-edit-sticker-memo" rows="3" class="memo-textarea" maxlength="200"></textarea>
             </div>
             <div class="modal-actions">
+                <button id="btn-memo-delete" class="btn btn-danger hidden">삭제 🗑️</button>
                 <button id="btn-memo-edit-start" class="btn btn-primary hidden">수정 ✍️</button>
                 <button id="btn-memo-edit-cancel" class="btn btn-secondary hidden">취소</button>
                 <button id="btn-memo-edit-save" class="btn btn-primary hidden">저장 🚀</button>
@@ -353,9 +308,9 @@
     <!-- G. 칭찬판 정보 수정 모달 (길게 누를 때 표시) -->
     <div id="modal-board-edit" class="modal-overlay hidden">
         <div class="modal-content">
-            <h3 class="modal-title">⚙️ 채소판 상세 수정</h3>
+            <h3 class="modal-title">⚙️ 칭찬판 상세 수정</h3>
             <p class="modal-desc">칭찬판의 제목, 목표 개수, 보상을 수정합니다. <span class="badge-lock">(여자친구 권한 필요)</span></p>
-            
+
             <div class="form-group" style="margin-top: 16px;">
                 <label for="edit-board-title">칭찬판 제목</label>
                 <input type="text" id="edit-board-title" class="editor-only-field" disabled>
@@ -368,7 +323,7 @@
                 <label for="edit-board-reward">달성 완료 보상</label>
                 <input type="text" id="edit-board-reward" class="editor-only-field" disabled>
             </div>
-            
+
             <div class="modal-actions" style="margin-top: 24px;">
                 <button id="btn-board-edit-close" class="btn btn-secondary">닫기</button>
                 <button id="btn-board-edit-save" class="btn btn-primary hidden">저장</button>
@@ -379,7 +334,8 @@
     <!-- 커스텀 토스트 알림 -->
     <div id="toast" class="toast hidden"></div>
 
-    <!-- 커스텀 JS (모바일 캐시 방지) -->
-    <script src="app.js?v=1.1.0"></script>
+    <!-- 커스텀 JS (모바일 기기 브라우저 캐시 방지) -->
+    <script src="app.js?v=1.2.1"></script>
 </body>
+
 </html>

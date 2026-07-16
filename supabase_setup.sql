@@ -32,3 +32,7 @@ CREATE TABLE IF NOT EXISTS public.praise_stickers (
 -- 3단계: NOT NULL 제약 조건 설정
 -- ALTER TABLE public.praise_stickers ALTER COLUMN updated_at SET NOT NULL;
 
+-- 3. 기존 테이블에 reader_role_name 및 editor_role_name 컬럼 추가가 필요한 경우 실행할 쿼리:
+-- ALTER TABLE public.praise_boards ADD COLUMN IF NOT EXISTS reader_role_name TEXT;
+-- ALTER TABLE public.praise_boards ADD COLUMN IF NOT EXISTS editor_role_name TEXT;
+
