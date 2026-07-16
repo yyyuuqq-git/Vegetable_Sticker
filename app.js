@@ -1107,16 +1107,18 @@ btnCreateBoard.addEventListener("click", async () => {
     loadingSpinner.classList.remove("hidden");
     modalShare.classList.add("hidden");
 
-    // 고유한 난수 코드 생성 (예: TEST-BOARD-4829)
+    // 고유한 순차 코드 생성 (예: TEST-BOARD-0001)
     let finalCode = "";
+    let boardNum = 1;
     while (true) {
-        const randNum = Math.floor(1000 + Math.random() * 9000);
-        const tempCode = `TEST-BOARD-${randNum}`;
+        const numStr = String(boardNum).padStart(4, '0');
+        const tempCode = `TEST-BOARD-${numStr}`;
         const existing = await apiGetBoard(tempCode);
         if (!existing) {
             finalCode = tempCode;
             break;
         }
+        boardNum++;
     }
 
     const newBoard = {
