@@ -1252,7 +1252,7 @@ btnSettingsSave.addEventListener("click", async () => {
 // 칭찬판 정보 수정 저장 처리 (길게 누르기 모달)
 btnBoardEditSave.addEventListener("click", async () => {
     if (!editTargetBoard) return;
-    const hasPermission = localStorage.getItem(`is_editor_${editTargetBoard.id}`) === "true";
+    const hasPermission = localStorage.getItem("is_editor") === "true";
     if (!hasPermission) return;
 
     const count = parseInt(editBoardTargetCount.value);
