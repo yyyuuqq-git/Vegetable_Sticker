@@ -464,7 +464,7 @@ function getCosmicStickerSvg(index, isSticker) {
 // 5.5 등록된 보드 목록 관리 및 사이드바 렌더링
 // ==========================================
 
-// 모든 스티커판 목록 조회 (서버 전체 탐색용 - 프라이버시 보호를 위해 TEST- 접두사 보드만 조회)
+// 모든 스티커판 목록 조회 (서버 전체 탐색용)
 async function apiGetAllBoards() {
     if (isLocalMode || !supabaseClient) {
         // 로컬스토리지 전체 키 순회
@@ -474,7 +474,7 @@ async function apiGetAllBoards() {
             if (key.startsWith("board_")) {
                 try {
                     const board = JSON.parse(localStorage.getItem(key));
-                    if (board.id.startsWith("TEST-")) {
+                    if (board && board.id) {
                         boards.push(board);
                     }
                 } catch(e){}
@@ -483,24 +483,21 @@ async function apiGetAllBoards() {
         return boards;
     } else {
         try {
-            // Supabase에서 TEST- 로 시작하는 보드만 필터링하여 가져옵니다.
             const { data, error } = await supabaseClient
                 .from("praise_boards")
                 .select("*")
-                .like("id", "TEST-%")
                 .order("created_at", { ascending: false });
             if (error) throw error;
             return data || [];
         } catch (e) {
             console.error("전체 보드 조회 실패", e);
-            // 로컬 캐시라도 필터링하여 리턴
             const boards = [];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
                 if (key.startsWith("board_")) {
                     try {
                         const board = JSON.parse(localStorage.getItem(key));
-                        if (board.id.startsWith("TEST-")) {
+                        if (board && board.id) {
                             boards.push(board);
                         }
                     } catch(e){}
@@ -509,6 +506,26 @@ async function apiGetAllBoards() {
             return boards;
         }
     }
+}
+
+// 다음 순차적 보드 코드 생성 (기존 보드 중 마지막 숫자 + 1)
+async function getNextSequentialBoardCode() {
+    const allBoards = await apiGetAllBoards();
+    let maxNum = 0;
+    
+    allBoards.forEach(b => {
+        if (b && b.id) {
+            const matches = String(b.id).match(/\d+/g);
+            if (matches) {
+                const num = parseInt(matches[matches.length - 1], 10);
+                if (!isNaN(num) && num > maxNum) {
+                    maxNum = num;
+                }
+            }
+        }
+    });
+    
+    return String(maxNum + 1);
 }
 
 // 보드 이름 수정 API
@@ -529,7 +546,7 @@ async function apiUpdateBoardTitle(boardId, newTitle) {
 // 보드 아이템 롱프레스 핸들러 - 칭찬판 상세 수정 모달 오픈
 async function handleBoardItemLongPress(board) {
     editTargetBoard = board;
-    const hasPermission = localStorage.getItem(`is_editor_${board.id}`) === "true";
+    const hasPermission = localStorage.getItem("is_editor") === "true";
 
     if (hasPermission) {
         // 모든 입력 필드 활성화
@@ -594,11 +611,27 @@ async function renderBoardList() {
     if (!boardListContainer) return;
     boardListContainer.innerHTML = "";
     
-    // 1. 현재 내 로컬 기기 목록(직접 생성/불러온 보드) 가져오기
+    // 1. 서버 및 로컬 전체 보드 목록 가져오기
+    let serverBoards = await apiGetAllBoards();
     let localList = getRegisteredBoards();
     
+    // 통합 맵으로 중복 제거 및 병합
+    const boardMap = new Map();
+    serverBoards.forEach(b => {
+        if (b && b.id) {
+            boardMap.set(b.id, { id: b.id, title: b.title, reward_text: b.reward_text });
+        }
+    });
+    localList.forEach(b => {
+        if (b && b.id && !boardMap.has(b.id)) {
+            boardMap.set(b.id, b);
+        }
+    });
+    
+    const combinedList = Array.from(boardMap.values());
+    
     // 2. 단일 리스트로 깔끔하게 렌더링
-    if (localList.length === 0) {
+    if (combinedList.length === 0) {
         const emptyMsg = document.createElement("div");
         emptyMsg.style.fontSize = "11px";
         emptyMsg.style.color = "var(--text-muted)";
@@ -607,7 +640,7 @@ async function renderBoardList() {
         emptyMsg.textContent = "등록된 스티커판이 없습니다. 🧸";
         boardListContainer.appendChild(emptyMsg);
     } else {
-        localList.forEach(board => {
+        combinedList.forEach(board => {
             const item = createBoardItemDOM(board, true);
             boardListContainer.appendChild(item);
         });
@@ -1107,19 +1140,8 @@ btnCreateBoard.addEventListener("click", async () => {
     loadingSpinner.classList.remove("hidden");
     modalShare.classList.add("hidden");
 
-    // 고유한 순차 코드 생성 (예: TEST-BOARD-0001)
-    let finalCode = "";
-    let boardNum = 1;
-    while (true) {
-        const numStr = String(boardNum).padStart(4, '0');
-        const tempCode = `TEST-BOARD-${numStr}`;
-        const existing = await apiGetBoard(tempCode);
-        if (!existing) {
-            finalCode = tempCode;
-            break;
-        }
-        boardNum++;
-    }
+    // 순차적 보드 코드 생성 (마지막 숫자 + 1, 예: 채소가게/달의 마지막 숫자가 2면 다음은 3)
+    const finalCode = await getNextSequentialBoardCode();
 
     const newBoard = {
         id: finalCode,
