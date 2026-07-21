@@ -21,3 +21,8 @@
 ## Rule 5: Preserve Production User Data and Personal Settings
 - **CRITICAL**: When modifying code, updating configurations, or committing and pushing changes, NEVER touch, overwrite, reset, or alter existing production users' sticker board data or personal settings (such as passwords, editor PINs, custom labels, board titles, rewards, or sticker entries).
 - Ensure all migrations, default fallback values, or code updates strictly preserve existing production state and user data intact.
+
+## Rule 6: Patch Notes Generation Guidelines
+- **Non-Technical Language (비전공자 맞춤)**: Write patch notes in clear, friendly, non-technical language that anyone can easily understand. Avoid developer jargon (e.g., API, CSS translate3d, Reflow, DB schema, JSON, E2E).
+- **Frontend & UI/UX Scope Only**: Focus strictly on user-facing frontend features, visual design, screen animations, and user experience enhancements.
+- **Single UI Artifact Format**: Never create individual `PATCH_NOTES.md` files inside project repository directories. Always generate ONLY ONE unified, beautiful Artifact document (`PATCH_NOTES_vX.X.X.md`) presented directly in the IDE UI for the user.
