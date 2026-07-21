@@ -1571,6 +1571,14 @@ document.addEventListener("DOMContentLoaded", () => {
             !modalShare.classList.contains("hidden");
 
         if (!isModalOpen) {
+            // 1. 현재 스티커판 메타 정보(제목/보상/목표개수) 변경 실시간 싱크
+            apiGetBoard(currentBoardId).then(board => {
+                if (board && currentBoard && (board.title !== currentBoard.title || board.reward_text !== currentBoard.reward_text || board.target_count !== currentBoard.target_count)) {
+                    refreshApp();
+                }
+            }).catch(err => console.error("백그라운드 보드 정보 싱크 실패", err));
+
+            // 2. 부착된 스티커 실시간 싱크
             apiGetStickers(currentBoardId).then(stickers => {
                 const currentActive = new Set(currentStickers.map(s => s.sticker_index));
                 const newActive = new Set(stickers.map(s => s.sticker_index));
@@ -1580,6 +1588,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     refreshApp();
                 }
             }).catch(err => console.error("백그라운드 스티커 싱크 실패", err));
+
+            // 3. 사이드바 메뉴가 열려있을 때 신규 생성된 스티커판 목록 실시간 갱신
+            if (sidebar && sidebar.classList.contains("open")) {
+                renderBoardList();
+            }
         }
     }, 5000);
 });
