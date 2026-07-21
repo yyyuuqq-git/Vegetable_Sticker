@@ -13,3 +13,7 @@
 - **CRITICAL**: All browser testing, localhost serving, and automated verification must be performed using the **test project** located at `c:\Users\user\Desktop\칭찬스티커 (테스트)`.
 - Never open localhost from `칭찬스티커 (달)` or `칭찬스티커 (채소가게)`. Always use `칭찬스티커 (테스트)` for local development servers.
 - Never run browser subagent tests or any automated tests against the live deployed sites (`yyyuuqq-git.github.io/sticker/` or `yyyuuqq-git.github.io/Vegetable_Sticker/`). Test exclusively on localhost using the test project.
+
+## Rule 4: Target Scope for User Requests (실사용자 vs 특정 프로젝트)
+- **"실사용자" (Production / Real Users)**: When the user mentions "실사용자", apply the changes to ALL production projects (`칭찬스티커 (달)`, `칭찬스티커 (채소가게)`, `칭찬스티커 (고양이)`), while EXCLUDING the test project (`칭찬스티커 (테스트)`).
+- **Specific Project Mention**: When the user explicitly mentions a specific project name (e.g., `고양이`, `달`, `채소가게`), apply the changes ONLY to that designated project.
