@@ -841,104 +841,109 @@ function createBoardItemDOM(board, isLocal) {
 
 // 현재 화면 리프레시
 async function refreshApp() {
-    // 1. 보드 정보 로드
-    let board = await apiGetBoard(currentBoardId);
-    if (!board) {
-        // 보드가 존재하지 않음 -> 초기 설정 화면 노출
-        loadingSpinner.classList.add("hidden");
-        appContent.classList.add("hidden");
-        welcomeScreen.classList.remove("hidden");
-        
-        // 설정 폼에 현재 보드 ID 자동 완성 및 테스트값 미리 채우기
-        if (currentBoardId === "DEFAULT" || currentBoardId.startsWith("TEST-")) {
-            setupBoardId.value = currentBoardId === "DEFAULT" ? "TEST-COSMIC-BOARD" : currentBoardId;
-            setupTitle.value = "채소가게 칭찬판 💖";
-            setupTargetCount.value = "30";
-            setupReward.value = "맛있는 디저트 데이트! 🍦";
-            setupPin.value = "1234";
+    try {
+        // 1. 보드 정보 로드
+        let board = await apiGetBoard(currentBoardId);
+        if (!board) {
+            // 보드가 존재하지 않음 -> 초기 설정 화면 노출
+            appContent.classList.add("hidden");
+            welcomeScreen.classList.remove("hidden");
+            
+            // 설정 폼에 현재 보드 ID 자동 완성 및 테스트값 미리 채우기
+            if (currentBoardId === "DEFAULT" || currentBoardId.startsWith("TEST-")) {
+                setupBoardId.value = currentBoardId === "DEFAULT" ? "TEST-COSMIC-BOARD" : currentBoardId;
+                setupTitle.value = "채소가게 칭찬판 💖";
+                setupTargetCount.value = "30";
+                setupReward.value = "맛있는 디저트 데이트! 🍦";
+                setupPin.value = "1234";
+            } else {
+                setupBoardId.value = currentBoardId;
+            }
+            return;
+        }
+
+        // 보드가 정상적으로 로드된 경우 설정창 숨기고 콘텐츠 노출
+        welcomeScreen.classList.add("hidden");
+        currentBoard = board;
+
+        // 로컬 보드 목록 관리 및 갱신
+        addRegisteredBoard(board.id, board.title, board.reward_text);
+        renderBoardList();
+
+        // 2. 스티커 정보 로드
+        currentStickers = await apiGetStickers(currentBoardId);
+        const activeIndices = new Set(currentStickers.map(s => s.sticker_index));
+
+        // 3. 헤더 및 요약 카드 업데이트
+        boardTitle.textContent = currentBoard.title;
+        boardCodeDisplay.textContent = `보상: ${currentBoard.reward_text || '없음'}`;
+
+        const targetCount = currentBoard.target_count;
+        const completedCount = currentStickers.length;
+        progressCount.textContent = `${completedCount} / ${targetCount} 개`;
+
+        const percentage = Math.min((completedCount / targetCount) * 100, 100);
+        progressBarFill.style.width = `${percentage}%`;
+
+        // 축하 배너 처리
+        if (completedCount >= targetCount) {
+            celebrationRewardDetail.textContent = `${currentBoard.reward_text}을(를) 획득할 시간이에요! 🎁`;
+            celebrationBanner.classList.remove("hidden");
         } else {
-            setupBoardId.value = currentBoardId;
+            celebrationBanner.classList.add("hidden");
         }
-        return;
-    }
 
-    // 보드가 정상적으로 로드된 경우 설정창 숨기고 콘텐츠 노출
-    welcomeScreen.classList.add("hidden");
-    currentBoard = board;
+        // 4. 스티커 판 격자 그리기 (개수가 보존되어 있으면 DOM을 파괴하지 않고 상태만 개별 갱신하여 깜빡임 완전 방지)
+        const existingSlots = Array.from(stickerGrid.children);
+        if (existingSlots.length !== targetCount) {
+            stickerGrid.innerHTML = "";
+            for (let i = 0; i < targetCount; i++) {
+                const slot = createSlotElement(i);
+                stickerGrid.appendChild(slot);
+            }
+        }
 
-    // 로컬 보드 목록 관리 및 갱신
-    addRegisteredBoard(board.id, board.title, board.reward_text);
-    renderBoardList();
-
-    // 2. 스티커 정보 로드
-    currentStickers = await apiGetStickers(currentBoardId);
-    const activeIndices = new Set(currentStickers.map(s => s.sticker_index));
-
-    // 3. 헤더 및 요약 카드 업데이트
-    boardTitle.textContent = currentBoard.title;
-    boardCodeDisplay.textContent = `보상: ${currentBoard.reward_text || '없음'}`;
-
-    const targetCount = currentBoard.target_count;
-    const completedCount = currentStickers.length;
-    progressCount.textContent = `${completedCount} / ${targetCount} 개`;
-
-    const percentage = Math.min((completedCount / targetCount) * 100, 100);
-    progressBarFill.style.width = `${percentage}%`;
-
-    // 축하 배너 처리
-    if (completedCount >= targetCount) {
-        celebrationRewardDetail.textContent = `${currentBoard.reward_text}을(를) 획득할 시간이에요! 🎁`;
-        celebrationBanner.classList.remove("hidden");
-    } else {
-        celebrationBanner.classList.add("hidden");
-    }
-
-    // 4. 스티커 판 격자 그리기 (개수가 보존되어 있으면 DOM을 파괴하지 않고 상태만 개별 갱신하여 깜빡임 완전 방지)
-    const existingSlots = Array.from(stickerGrid.children);
-    if (existingSlots.length !== targetCount) {
-        stickerGrid.innerHTML = "";
+        const currentSlotElements = stickerGrid.children;
         for (let i = 0; i < targetCount; i++) {
-            const slot = createSlotElement(i);
-            stickerGrid.appendChild(slot);
+            const slot = currentSlotElements[i];
+            if (!slot) continue;
+
+            const isActive = activeIndices.has(i);
+            const stickerData = currentStickers.find(s => s.sticker_index === i);
+            const rawMemo = stickerData && stickerData.memo ? stickerData.memo : "";
+
+            const prevActive = slot.classList.contains("active");
+            const prevMemo = slot.getAttribute("data-memo") || "";
+
+            if (prevActive !== isActive || prevMemo !== rawMemo || !slot.hasChildNodes()) {
+                slot.className = `grid-slot ${isActive ? "active" : ""}`;
+                slot.setAttribute("data-memo", rawMemo);
+                slot.innerHTML = `
+                    ${getCosmicStickerSvg(i, isActive)}
+                    <span class="slot-number">${i + 1}</span>
+                `;
+            }
         }
+
+        // 5. 모달 내의 필드 업데이트 (현재 설정 대입)
+        if (editTitle) editTitle.value = currentBoard.title || "";
+        if (editTargetCount) editTargetCount.value = currentBoard.target_count || 30;
+        if (editReward) editReward.value = currentBoard.reward_text || "";
+        if (editReaderName) editReaderName.value = localStorage.getItem("global_reader_role_name") || currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
+        if (editEditorName) editEditorName.value = localStorage.getItem("global_editor_role_name") || currentBoard.editor_role_name || "여자친구 모드 (부착 가능)";
+        if (editPin) editPin.value = localStorage.getItem("global_editor_pin") || currentBoard.editor_pin || "";
+
+        // 역할 UI 업데이트 (역할 명칭 반영)
+        updateRoleUI();
+
+        // 컨텐츠 표출
+        appContent.classList.remove("hidden");
+    } catch (err) {
+        console.error("refreshApp 실행 중 오류 발생:", err);
+    } finally {
+        // 로딩 종료 보장
+        loadingSpinner.classList.add("hidden");
     }
-
-    const currentSlotElements = stickerGrid.children;
-    for (let i = 0; i < targetCount; i++) {
-        const slot = currentSlotElements[i];
-        if (!slot) continue;
-
-        const isActive = activeIndices.has(i);
-        const stickerData = currentStickers.find(s => s.sticker_index === i);
-        const rawMemo = stickerData && stickerData.memo ? stickerData.memo : "";
-
-        const prevActive = slot.classList.contains("active");
-        const prevMemo = slot.getAttribute("data-memo") || "";
-
-        if (prevActive !== isActive || prevMemo !== rawMemo || !slot.hasChildNodes()) {
-            slot.className = `grid-slot ${isActive ? "active" : ""}`;
-            slot.setAttribute("data-memo", rawMemo);
-            slot.innerHTML = `
-                ${getCosmicStickerSvg(i, isActive)}
-                <span class="slot-number">${i + 1}</span>
-            `;
-        }
-    }
-
-    // 5. 모달 내의 필드 업데이트 (현재 설정 대입)
-    if (editTitle) editTitle.value = currentBoard.title || "";
-    if (editTargetCount) editTargetCount.value = currentBoard.target_count || 30;
-    if (editReward) editReward.value = currentBoard.reward_text || "";
-    if (editReaderName) editReaderName.value = localStorage.getItem("global_reader_role_name") || currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
-    if (editEditorName) editEditorName.value = localStorage.getItem("global_editor_role_name") || currentBoard.editor_role_name || "여자친구 모드 (부착 가능)";
-    if (editPin) editPin.value = localStorage.getItem("global_editor_pin") || currentBoard.editor_pin || "";
-
-    // 역할 UI 업데이트 (역할 명칭 반영)
-    updateRoleUI();
-
-    // 로딩 종료 및 컨텐츠 표출
-    loadingSpinner.classList.add("hidden");
-    appContent.classList.remove("hidden");
 }
 
 // 날짜 포맷 함수
