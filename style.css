@@ -834,19 +834,57 @@ input:disabled {
     max-width: 170px;
 }
 
-/* 보드 삭제 버튼 */
+/* 보드 액션 버튼 그룹 (수정 / 삭제) */
+.board-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 5;
+}
+
+.btn-edit-board,
 .btn-delete-board {
     background: transparent;
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    padding: 4px;
+    padding: 6px;
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: background-color 0.2s, color 0.2s;
-    z-index: 5;
+    transition: background-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.btn-edit-board:hover {
+    background-color: rgba(74, 85, 104, 0.12);
+    color: var(--stitch-primary-dark);
+}
+
+.btn-edit-board:active,
+.btn-delete-board:active {
+    transform: scale(0.9);
+}
+
+/* 롱프레스 드래그 앤 드롭 재정렬 스타일 */
+.board-list.is-reordering {
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+.board-list.is-reordering .board-item:not(.dragging) {
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.board-item.dragging {
+    opacity: 0.9;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    border-color: var(--stitch-pink);
+    background-color: var(--soft-pink);
+    z-index: 1000;
+    pointer-events: none;
+    transition: box-shadow 0.15s ease;
 }
 
 .btn-delete-board:hover {

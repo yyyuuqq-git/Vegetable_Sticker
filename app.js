@@ -495,13 +495,14 @@ async function apiGetAllBoards() {
                 } catch(e){}
             }
         }
+        boards.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
         return boards;
     } else {
         try {
             const { data, error } = await supabaseClient
                 .from("praise_boards")
                 .select("*")
-                .order("created_at", { ascending: false });
+                .order("created_at", { ascending: true });
             if (error) throw error;
             return (data || []).filter(b => isVegetableBoard(b));
         } catch (e) {
@@ -518,6 +519,7 @@ async function apiGetAllBoards() {
                     } catch(e){}
                 }
             }
+            boards.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
             return boards;
         }
     }
@@ -562,31 +564,28 @@ async function apiUpdateBoardTitle(boardId, newTitle) {
     return false;
 }
 
-// 보드 아이템 롱프레스 핸들러 - 칭찬판 상세 수정 모달 오픈
-async function handleBoardItemLongPress(board) {
-    editTargetBoard = board;
+// 보드 아이템 정보 수정 모달 오픈 핸들러
+async function openBoardEditModal(board) {
+    let fullBoard = (await apiGetBoard(board.id)) || board;
+    editTargetBoard = fullBoard;
     const hasPermission = localStorage.getItem("is_editor") === "true";
 
     if (hasPermission) {
-        // 모든 입력 필드 활성화
         if (editBoardTitle) editBoardTitle.disabled = false;
         if (editBoardTargetCount) editBoardTargetCount.disabled = false;
         if (editBoardReward) editBoardReward.disabled = false;
         if (btnBoardEditSave) btnBoardEditSave.classList.remove("hidden");
     } else {
-        // 읽기 전용으로 비활성화
         if (editBoardTitle) editBoardTitle.disabled = true;
         if (editBoardTargetCount) editBoardTargetCount.disabled = true;
         if (editBoardReward) editBoardReward.disabled = true;
         if (btnBoardEditSave) btnBoardEditSave.classList.add("hidden");
     }
 
-    // 폼 값 세팅
-    if (editBoardTitle) editBoardTitle.value = board.title;
-    if (editBoardTargetCount) editBoardTargetCount.value = board.target_count || 30;
-    if (editBoardReward) editBoardReward.value = board.reward_text || "";
+    if (editBoardTitle) editBoardTitle.value = fullBoard.title || "";
+    if (editBoardTargetCount) editBoardTargetCount.value = fullBoard.target_count || 30;
+    if (editBoardReward) editBoardReward.value = fullBoard.reward_text || "";
 
-    // 팝업 모달창 오픈
     if (modalBoardEdit) {
         modalBoardEdit.classList.remove("hidden");
     }
@@ -604,10 +603,31 @@ function addRegisteredBoard(boardId, title, rewardText) {
     const existingIndex = list.findIndex(b => b.id === boardId);
     if (existingIndex !== -1) {
         list[existingIndex].title = title;
-        list[existingIndex].reward_text = rewardText;
+        if (rewardText !== undefined) {
+            list[existingIndex].reward_text = rewardText;
+        }
     } else {
-        list.push({ id: boardId, title: title, reward_text: rewardText });
+        list.push({ id: boardId, title: title, reward_text: rewardText || "" });
     }
+    localStorage.setItem("registered_boards", JSON.stringify(list));
+}
+
+function getBoardOrder() {
+    const saved = localStorage.getItem("board_order");
+    return saved ? JSON.parse(saved) : [];
+}
+
+function saveBoardOrder(orderedIds) {
+    localStorage.setItem("board_order", JSON.stringify(orderedIds));
+    
+    let list = getRegisteredBoards();
+    list.sort((a, b) => {
+        const idxA = orderedIds.indexOf(a.id);
+        const idxB = orderedIds.indexOf(b.id);
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+    });
     localStorage.setItem("registered_boards", JSON.stringify(list));
 }
 
@@ -615,6 +635,9 @@ function removeRegisteredBoard(boardId) {
     let list = getRegisteredBoards();
     list = list.filter(b => b.id !== boardId);
     localStorage.setItem("registered_boards", JSON.stringify(list));
+    
+    const orderList = getBoardOrder().filter(id => id !== boardId);
+    localStorage.setItem("board_order", JSON.stringify(orderList));
     
     if (currentBoardId === boardId) {
         if (list.length > 0) {
@@ -632,27 +655,38 @@ let lastBoardListFingerprint = "";
 async function renderBoardList(force = false) {
     if (!boardListContainer) return;
     
-    // 1. 서버 및 로컬 전체 보드 목록 가져오기
     let serverBoards = await apiGetAllBoards();
     let localList = getRegisteredBoards();
     
-    // 통합 맵으로 중복 제거 및 병합
     const boardMap = new Map();
     serverBoards.forEach(b => {
         if (b && b.id) {
-            boardMap.set(b.id, { id: b.id, title: b.title, reward_text: b.reward_text });
+            boardMap.set(b.id, { ...b });
         }
     });
     localList.forEach(b => {
-        if (b && b.id && !boardMap.has(b.id)) {
-            boardMap.set(b.id, b);
+        if (b && b.id) {
+            const existing = boardMap.get(b.id) || {};
+            boardMap.set(b.id, { ...existing, ...b });
         }
     });
     
     const combinedList = Array.from(boardMap.values());
+
+    const orderList = getBoardOrder();
+    if (orderList.length > 0) {
+        combinedList.sort((a, b) => {
+            const idxA = orderList.indexOf(a.id);
+            const idxB = orderList.indexOf(b.id);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return 0;
+        });
+    }
+
     const fingerprint = combinedList.map(b => `${b.id}:${b.title}:${b.reward_text}:${b.id === currentBoardId}`).join('|');
     
-    // 변경 사항이 없으면 DOM 재작성 금지 (깜빡임 완전 차단!)
     if (!force && fingerprint === lastBoardListFingerprint) {
         return;
     }
@@ -660,7 +694,6 @@ async function renderBoardList(force = false) {
 
     boardListContainer.innerHTML = "";
     
-    // 2. 단일 리스트로 깔끔하게 렌더링
     if (combinedList.length === 0) {
         const emptyMsg = document.createElement("div");
         emptyMsg.style.fontSize = "11px";
@@ -682,9 +715,17 @@ function createBoardItemDOM(board, isLocal) {
     const isActive = board.id === currentBoardId;
     const item = document.createElement("div");
     item.className = `board-item ${isActive ? "active" : ""}`;
+    item.dataset.boardId = board.id;
     
-    // 나의 칭찬판 목록인 경우 삭제(휴지통) 아이콘 노출 (클릭 시 권한 검증)
-    const deleteButtonHtml = isLocal ? `
+    const hasPermission = localStorage.getItem("is_editor") === "true";
+
+    const editButtonHtml = `
+        <button class="btn-edit-board" title="스티커판 정보 수정">
+            <span class="material-icons" style="font-size: 16px;">edit</span>
+        </button>
+    `;
+
+    const deleteButtonHtml = (isLocal && hasPermission) ? `
         <button class="btn-delete-board" title="삭제">
             <span class="material-icons" style="font-size: 16px;">delete</span>
         </button>
@@ -695,11 +736,18 @@ function createBoardItemDOM(board, isLocal) {
             <span class="board-item-title">${board.title}</span>
             <span class="board-item-code">보상: ${board.reward_text || '없음'}</span>
         </div>
-        ${deleteButtonHtml}
+        <div class="board-item-actions">
+            ${editButtonHtml}
+            ${deleteButtonHtml}
+        </div>
     `;
 
-    // 1. 클릭 시 전환 이벤트
+    let isReorderDrag = false;
     item.addEventListener("click", async () => {
+        if (isReorderDrag) {
+            isReorderDrag = false;
+            return;
+        }
         if (isActive) return;
         
         loadingSpinner.classList.remove("hidden");
@@ -708,7 +756,7 @@ function createBoardItemDOM(board, isLocal) {
         
         currentBoardId = board.id;
         localStorage.setItem("current_board_id", currentBoardId);
-        isEditorMode = localStorage.getItem("is_editor") === "true"; // 해당 보드의 기존 인증 상태 복원
+        isEditorMode = localStorage.getItem("is_editor") === "true";
         updateRoleUI();
         await refreshApp();
         
@@ -716,45 +764,152 @@ function createBoardItemDOM(board, isLocal) {
         window.history.replaceState({ path: newUrl }, "", newUrl);
     });
 
-    // 2. 롱프레스 감지 이벤트 (모바일 및 데스크톱)
     let pressTimer = null;
-    let isLongPress = false;
+    let startY = 0;
+    let dragStartY = 0;
+    let initialLayoutTop = 0;
+    let isDragging = false;
 
-    const startPress = (e) => {
+    const startDragHandler = (e) => {
         if (e.type === 'mousedown' && e.button !== 0) return;
-        isLongPress = false;
+        const targetBtn = e.target.closest("button");
+        if (targetBtn) return;
+
+        isReorderDrag = false;
+        startY = e.type.startsWith('touch') ? (e.touches[0] ? e.touches[0].clientY : 0) : e.clientY;
+
         pressTimer = setTimeout(() => {
-            isLongPress = true;
-            handleBoardItemLongPress(board);
-        }, 700);
+            const canEdit = localStorage.getItem("is_editor") === "true";
+            if (!canEdit) {
+                showToast("편집자 권한(여자친구 모드)에서만 스티커판 순서를 변경할 수 있습니다. 🔒");
+                return;
+            }
+
+            isDragging = true;
+            isReorderDrag = true;
+            dragStartY = startY;
+            initialLayoutTop = item.offsetTop;
+
+            item.classList.add("dragging");
+            if (boardListContainer) boardListContainer.classList.add("is-reordering");
+            if (navigator.vibrate) navigator.vibrate(40);
+
+            item.style.transform = `translate3d(0, 0px, 0) scale(1.03)`;
+
+            window.addEventListener("mousemove", onMoveHandler, { passive: false });
+            window.addEventListener("touchmove", onMoveHandler, { passive: false });
+            window.addEventListener("mouseup", onEndHandler);
+            window.addEventListener("touchend", onEndHandler);
+            window.addEventListener("touchcancel", onEndHandler);
+        }, 350);
     };
 
-    const cancelPress = () => {
+    const cancelTimerHandler = (e) => {
+        if (!isDragging && pressTimer) {
+            const currentY = e.type.startsWith('touch') ? (e.touches[0] ? e.touches[0].clientY : 0) : e.clientY;
+            if (Math.abs(currentY - startY) > 8) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        }
+    };
+
+    const onMoveHandler = (e) => {
+        if (!isDragging) return;
+        if (e.cancelable) e.preventDefault();
+
+        const currentY = e.type.startsWith('touch') ? (e.touches[0] ? e.touches[0].clientY : 0) : e.clientY;
+        
+        const currentLayoutTop = item.offsetTop;
+        const deltaY = (currentY - dragStartY) - (currentLayoutTop - initialLayoutTop);
+        item.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.03)`;
+
+        const siblings = [...boardListContainer.querySelectorAll(".board-item:not(.dragging)")];
+        let nextSibling = siblings.find(sibling => {
+            const box = sibling.getBoundingClientRect();
+            return currentY < box.top + box.height / 2;
+        });
+
+        if (nextSibling) {
+            if (nextSibling !== item.nextSibling) {
+                boardListContainer.insertBefore(item, nextSibling);
+            }
+        } else {
+            if (item.nextSibling !== null) {
+                boardListContainer.appendChild(item);
+            }
+        }
+    };
+
+    const onEndHandler = () => {
         if (pressTimer) {
             clearTimeout(pressTimer);
             pressTimer = null;
         }
+
+        if (isDragging) {
+            isDragging = false;
+            item.classList.remove("dragging");
+            item.style.transform = "";
+            if (boardListContainer) boardListContainer.classList.remove("is-reordering");
+
+            window.removeEventListener("mousemove", onMoveHandler);
+            window.removeEventListener("touchmove", onMoveHandler);
+            window.removeEventListener("mouseup", onEndHandler);
+            window.removeEventListener("touchend", onEndHandler);
+            window.removeEventListener("touchcancel", onEndHandler);
+
+            const newOrderList = Array.from(boardListContainer.querySelectorAll(".board-item"))
+                .map(el => el.dataset.boardId)
+                .filter(Boolean);
+
+            saveBoardOrder(newOrderList);
+        }
     };
 
-    const endPress = (e) => {
-        if (pressTimer) {
-            clearTimeout(pressTimer);
-            pressTimer = null;
-        }
-        if (isLongPress) {
-            e.preventDefault();
+    item.addEventListener("mousedown", startDragHandler);
+    item.addEventListener("mousemove", cancelTimerHandler);
+    item.addEventListener("mouseleave", () => { if (!isDragging && pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
+
+    item.addEventListener("touchstart", startDragHandler, { passive: true });
+    item.addEventListener("touchmove", cancelTimerHandler, { passive: true });
+    item.addEventListener("touchcancel", () => { if (!isDragging && pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
+
+    const btnEdit = item.querySelector(".btn-edit-board");
+    if (btnEdit) {
+        btnEdit.addEventListener("mousedown", (e) => e.stopPropagation());
+        btnEdit.addEventListener("mouseup", (e) => e.stopPropagation());
+        btnEdit.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
+        btnEdit.addEventListener("touchend", (e) => e.stopPropagation(), { passive: true });
+
+        btnEdit.addEventListener("click", (e) => {
             e.stopPropagation();
+            e.preventDefault();
+            openBoardEditModal(board);
+        });
+    }
+
+    if (isLocal && hasPermission) {
+        const btnDelete = item.querySelector(".btn-delete-board");
+        if (btnDelete) {
+            btnDelete.addEventListener("mousedown", (e) => e.stopPropagation());
+            btnDelete.addEventListener("mouseup", (e) => e.stopPropagation());
+            btnDelete.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
+            btnDelete.addEventListener("touchend", (e) => e.stopPropagation(), { passive: true });
+
+            btnDelete.addEventListener("click", (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                deleteTargetBoardId = board.id;
+                deleteTargetIndex = null;
+                deleteConfirmText.textContent = `'${board.title}' 판을 삭제하시겠습니까?\n(실제 데이터와 스티커가 모두 영구 삭제됩니다.)`;
+                modalDelete.classList.remove("hidden");
+            });
         }
-    };
+    }
 
-    item.addEventListener("mousedown", startPress);
-    item.addEventListener("mouseup", endPress);
-    item.addEventListener("mouseleave", cancelPress);
-
-    item.addEventListener("touchstart", startPress, { passive: true });
-    item.addEventListener("touchend", endPress, { passive: false });
-    item.addEventListener("touchcancel", cancelPress, { passive: true });
-    item.addEventListener("touchmove", cancelPress, { passive: true });
+    return item;
+}
 
     // 3. 삭제 버튼 클릭 (완전 삭제)
     if (isLocal) {
@@ -1152,7 +1307,8 @@ btnCreateBoard.addEventListener("click", async () => {
         title: finalTitle,
         target_count: 30,
         reward_text: "새로운 선물 지정하기",
-        editor_pin: currentBoard ? currentBoard.editor_pin : "1234"
+        editor_pin: currentBoard ? currentBoard.editor_pin : "1234",
+        created_at: new Date().toISOString()
     };
 
     const result = await apiCreateBoard(newBoard);
@@ -1524,7 +1680,8 @@ document.addEventListener("DOMContentLoaded", () => {
             title: title,
             target_count: target,
             reward_text: reward,
-            editor_pin: pin
+            editor_pin: pin,
+            created_at: new Date().toISOString()
         };
 
         const result = await apiCreateBoard(newBoard);

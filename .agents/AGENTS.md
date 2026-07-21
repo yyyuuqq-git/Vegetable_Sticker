@@ -17,3 +17,7 @@
 ## Rule 4: Target Scope for User Requests (실사용자 vs 특정 프로젝트)
 - **"실사용자" (Production / Real Users)**: When the user mentions "실사용자", apply the changes to ALL production projects (`칭찬스티커 (달)`, `칭찬스티커 (채소가게)`, `칭찬스티커 (고양이)`), while EXCLUDING the test project (`칭찬스티커 (테스트)`).
 - **Specific Project Mention**: When the user explicitly mentions a specific project name (e.g., `고양이`, `달`, `채소가게`), apply the changes ONLY to that designated project.
+
+## Rule 5: Preserve Production User Data and Personal Settings
+- **CRITICAL**: When modifying code, updating configurations, or committing and pushing changes, NEVER touch, overwrite, reset, or alter existing production users' sticker board data or personal settings (such as passwords, editor PINs, custom labels, board titles, rewards, or sticker entries).
+- Ensure all migrations, default fallback values, or code updates strictly preserve existing production state and user data intact.
