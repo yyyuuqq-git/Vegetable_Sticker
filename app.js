@@ -893,67 +893,36 @@ async function refreshApp() {
         celebrationBanner.classList.add("hidden");
     }
 
-    // 4. 스티커 판 격자 그리기
-    stickerGrid.innerHTML = "";
+    // 4. 스티커 판 격자 그리기 (개수가 보존되어 있으면 DOM을 파괴하지 않고 상태만 개별 갱신하여 깜빡임 완전 방지)
+    const existingSlots = Array.from(stickerGrid.children);
+    if (existingSlots.length !== targetCount) {
+        stickerGrid.innerHTML = "";
+        for (let i = 0; i < targetCount; i++) {
+            const slot = createSlotElement(i);
+            stickerGrid.appendChild(slot);
+        }
+    }
+
+    const currentSlotElements = stickerGrid.children;
     for (let i = 0; i < targetCount; i++) {
+        const slot = currentSlotElements[i];
+        if (!slot) continue;
+
         const isActive = activeIndices.has(i);
+        const stickerData = currentStickers.find(s => s.sticker_index === i);
+        const rawMemo = stickerData && stickerData.memo ? stickerData.memo : "";
 
-        const slot = document.createElement("div");
-        slot.className = `grid-slot ${isActive ? "active" : ""}`;
-        slot.innerHTML = `
-            ${getCosmicStickerSvg(i, isActive)}
-            <span class="slot-number">${i + 1}</span>
-        `;
+        const prevActive = slot.classList.contains("active");
+        const prevMemo = slot.getAttribute("data-memo") || "";
 
-        // 칸 클릭 및 롱프레스 핸들러 바인딩 (모바일 터치 & 데스크톱 마우스 대응)
-        let pressTimer = null;
-        let preventClick = false;
-
-        const startPress = (e) => {
-            if (e.type === 'mousedown' && e.button !== 0) return;
-            preventClick = false;
-            pressTimer = setTimeout(() => {
-                preventClick = true;
-                handleSlotLongPress(i, isActive);
-            }, 600); // 600ms 롱프레스 임계값
-        };
-
-        const cancelPress = () => {
-            if (pressTimer) {
-                clearTimeout(pressTimer);
-                pressTimer = null;
-            }
-        };
-
-        const endPress = (e) => {
-            if (pressTimer) {
-                clearTimeout(pressTimer);
-                pressTimer = null;
-            }
-        };
-
-        // 데스크톱 마우스 이벤트
-        slot.addEventListener("mousedown", startPress);
-        slot.addEventListener("mouseup", endPress);
-        slot.addEventListener("mouseleave", cancelPress);
-
-        // 모바일 터치 이벤트
-        slot.addEventListener("touchstart", startPress, { passive: true });
-        slot.addEventListener("touchend", endPress, { passive: true });
-        slot.addEventListener("touchcancel", cancelPress, { passive: true });
-        slot.addEventListener("touchmove", cancelPress, { passive: true });
-
-        // 클릭 이벤트 (짧은 터치 / 클릭)
-        slot.addEventListener("click", (e) => {
-            if (preventClick) {
-                e.preventDefault();
-                preventClick = false;
-                return;
-            }
-            handleSlotClick(i, isActive);
-        });
-
-        stickerGrid.appendChild(slot);
+        if (prevActive !== isActive || prevMemo !== rawMemo || !slot.hasChildNodes()) {
+            slot.className = `grid-slot ${isActive ? "active" : ""}`;
+            slot.setAttribute("data-memo", rawMemo);
+            slot.innerHTML = `
+                ${getCosmicStickerSvg(i, isActive)}
+                <span class="slot-number">${i + 1}</span>
+            `;
+        }
     }
 
     // 5. 모달 내의 필드 업데이트 (현재 설정 대입)
@@ -1572,32 +1541,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 타 기기에서의 업데이트 감지를 위해 5초마다 자동 싱크 (폴링)
-    setInterval(() => {
-        // 사용자가 입력을 입력하거나 모달 창을 띄운 작업 중이 아닐 때만 렌더링 리프레시 진행해 간섭 차단
-        const isModalOpen = !modalPin.classList.contains("hidden") ||
-            !modalSettings.classList.contains("hidden") ||
-            !modalDelete.classList.contains("hidden") ||
-            !modalShare.classList.contains("hidden");
-
-        if (!isModalOpen) {
-            // 1. 현재 스티커판 메타 정보(제목/보상/목표개수) 변경 실시간 싱크
-            apiGetBoard(currentBoardId).then(board => {
-                if (board && currentBoard && (board.title !== currentBoard.title || board.reward_text !== currentBoard.reward_text || board.target_count !== currentBoard.target_count)) {
-                    refreshApp();
-                }
-            }).catch(err => console.error("백그라운드 보드 정보 싱크 실패", err));
-
-            // 2. 부착된 스티커 실시간 싱크
-            apiGetStickers(currentBoardId).then(stickers => {
-                const currentActive = new Set(currentStickers.map(s => s.sticker_index));
-                const newActive = new Set(stickers.map(s => s.sticker_index));
-
-                // 스티커 구성원 변경 시에만 화면 부분 렌더링 리프레시 실행
-                if (currentActive.size !== newActive.size || [...currentActive].some(x => !newActive.has(x))) {
-                    refreshApp();
-                }
-            }).catch(err => console.error("백그라운드 스티커 싱크 실패", err));
+    // 탭 전환 시(앱으로 다시 돌아왔을 때) 1회 자동 동기화 (불필요한 5초 백그라운드 폴링 완전 제거)
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            refreshApp();
         }
-    }, 5000);
+    });
 });
