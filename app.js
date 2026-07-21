@@ -1598,11 +1598,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     refreshApp();
                 }
             }).catch(err => console.error("백그라운드 스티커 싱크 실패", err));
-
-            // 3. 사이드바 메뉴가 열려있을 때 신규 생성된 스티커판 목록 실시간 갱신
-            if (sidebar && sidebar.classList.contains("open")) {
-                renderBoardList();
-            }
         }
     }, 5000);
 });
