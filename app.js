@@ -523,24 +523,28 @@ async function apiGetAllBoards() {
     }
 }
 
-// 다음 순차적 보드 코드 생성 (기존 보드 중 마지막 숫자 + 1)
+// 다음 순차적 보드 코드 생성 (기존 보드 중 마지막 숫자 + 1, 예: CHAEDO_1 -> CHAEDO_2)
 async function getNextSequentialBoardCode() {
     const allBoards = await apiGetAllBoards();
     let maxNum = 0;
+    let prefix = "CHAEDO_";
     
     allBoards.forEach(b => {
-        if (b && b.id) {
-            const matches = String(b.id).match(/\d+/g);
-            if (matches) {
-                const num = parseInt(matches[matches.length - 1], 10);
+        if (b && b.id && !b.id.startsWith("TEST-BOARD-")) {
+            const match = String(b.id).match(/^(.*?)(\d+)$/);
+            if (match) {
+                const currentPrefix = match[1];
+                const num = parseInt(match[2], 10);
                 if (!isNaN(num) && num > maxNum) {
                     maxNum = num;
+                    if (currentPrefix) prefix = currentPrefix;
                 }
             }
         }
     });
     
-    return String(maxNum + 1);
+    const nextNum = maxNum + 1;
+    return `${prefix}${nextNum}`;
 }
 
 // 보드 이름 수정 API
