@@ -626,10 +626,11 @@ function removeRegisteredBoard(boardId) {
     }
 }
 
-// 사이드바 내부 보드 목록 동적 렌더링
-async function renderBoardList() {
+let lastBoardListFingerprint = "";
+
+// 사이드바 내부 보드 목록 동적 렌더링 (지능적 핑거프린트 대조로 깜빡임 완전 방지)
+async function renderBoardList(force = false) {
     if (!boardListContainer) return;
-    boardListContainer.innerHTML = "";
     
     // 1. 서버 및 로컬 전체 보드 목록 가져오기
     let serverBoards = await apiGetAllBoards();
@@ -649,6 +650,15 @@ async function renderBoardList() {
     });
     
     const combinedList = Array.from(boardMap.values());
+    const fingerprint = combinedList.map(b => `${b.id}:${b.title}:${b.reward_text}:${b.id === currentBoardId}`).join('|');
+    
+    // 변경 사항이 없으면 DOM 재작성 금지 (깜빡임 완전 차단!)
+    if (!force && fingerprint === lastBoardListFingerprint) {
+        return;
+    }
+    lastBoardListFingerprint = fingerprint;
+
+    boardListContainer.innerHTML = "";
     
     // 2. 단일 리스트로 깔끔하게 렌더링
     if (combinedList.length === 0) {
@@ -1476,7 +1486,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnMenu.addEventListener("click", () => {
             sidebar.classList.add("open");
             sidebarOverlay.classList.remove("hidden");
-            renderBoardList(); // 열릴 때 최신 목록 렌더링
+            renderBoardList(true); // 열릴 때 최신 목록 렌더링
         });
     }
 
