@@ -25,12 +25,13 @@ if (!isLocalMode) {
     console.log("Supabase 설정이 비어있어 '로컬 모드(기기 브라우저 저장)'로 구동됩니다.");
 }
 
-// 채소가게 칭찬스티커 전용 보드 판별 (달 보드 및 테스트 보드 자동 제외)
+// 채소가게 칭찬스티커 전용 보드 판별 (달, 고양이 보드 및 테스트 보드 자동 제외)
 function isVegetableBoard(b) {
     if (!b) return false;
     const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase();
     const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase();
     if (idStr.startsWith("TEST-BOARD-") || idStr === "TEST-BOARD") return false;
+    if (idStr.startsWith("CAT") || idStr.includes("KITTY") || titleStr.includes("고양이") || titleStr.includes("야옹")) return false;
     if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || titleStr.includes("채소")) return true;
     return false;
 }
