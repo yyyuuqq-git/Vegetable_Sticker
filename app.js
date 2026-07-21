@@ -1519,10 +1519,6 @@ document.addEventListener("DOMContentLoaded", () => {
             showToast("공유 코드를 입력해 주세요.");
             return;
         }
-        if (!code.startsWith("TEST-")) {
-            showToast("보안을 위해 테스트용 보드(TEST-로 시작)만 새로 생성하거나 덮어쓸 수 있습니다.");
-            return;
-        }
         if (!title) {
             showToast("칭찬판 제목을 입력해 주세요.");
             return;
