@@ -46,6 +46,7 @@ let currentBoard = null;
 let currentStickers = [];
 let isEditorMode = localStorage.getItem("is_editor") === "true";
 let deleteTargetIndex = null;
+let deleteTargetBoardId = null;
 let memoTargetIndex = null;
 let editTargetIndex = null;
 
@@ -1454,12 +1455,41 @@ btnBoardEditClose.addEventListener("click", () => {
     if (modalBoardEdit) modalBoardEdit.classList.add("hidden");
 });
 
-// 스티커 제거 확인 처리
+// 스티커 제거 또는 스티커판 삭제 확인 처리
 btnDeleteConfirm.addEventListener("click", async () => {
-    if (deleteTargetIndex === null) return;
-
     loadingSpinner.classList.remove("hidden");
     modalDelete.classList.add("hidden");
+
+    // (A) 스티커판(보드) 삭제 처리
+    if (deleteTargetBoardId) {
+        const boardIdToDelete = deleteTargetBoardId;
+        deleteTargetBoardId = null;
+        const wasActive = boardIdToDelete === currentBoardId;
+
+        await apiDeleteBoard(boardIdToDelete);
+        removeRegisteredBoard(boardIdToDelete);
+
+        if (wasActive) {
+            sidebar.classList.remove("open");
+            sidebarOverlay.classList.add("hidden");
+            isEditorMode = localStorage.getItem("is_editor") === "true";
+            updateRoleUI();
+            const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
+            window.history.replaceState({ path: newUrl }, "", newUrl);
+            await refreshApp();
+        } else {
+            renderBoardList();
+            loadingSpinner.classList.add("hidden");
+        }
+        showToast("스티커판이 완전히 삭제되었습니다. 🗑️");
+        return;
+    }
+
+    // (B) 스티커 제거 처리
+    if (deleteTargetIndex === null) {
+        loadingSpinner.classList.add("hidden");
+        return;
+    }
 
     const success = await apiRemoveSticker(currentBoardId, deleteTargetIndex);
     if (success) {
@@ -1474,6 +1504,7 @@ btnDeleteConfirm.addEventListener("click", async () => {
 
 btnDeleteCancel.addEventListener("click", () => {
     deleteTargetIndex = null;
+    deleteTargetBoardId = null;
     modalDelete.classList.add("hidden");
 });
 
