@@ -461,7 +461,7 @@ function getShapeMarkup(index, stroke, fill, width) {
     }
 }
 
-function getCosmicStickerSvg(index, isSticker) {
+function getVeggieStickerSvg(index, isSticker) {
     if (!isSticker) {
         return "";
     }
@@ -1007,7 +1007,7 @@ async function refreshApp() {
                 slot.className = `grid-slot ${isActive ? "active" : ""}`;
                 slot.setAttribute("data-memo", rawMemo);
                 slot.innerHTML = `
-                    ${getCosmicStickerSvg(i, isActive)}
+                    ${getVeggieStickerSvg(i, isActive)}
                     <span class="slot-number">${i + 1}</span>
                 `;
             }
