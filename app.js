@@ -461,11 +461,7 @@ function getShapeMarkup(index, stroke, fill, width) {
 
 function getCosmicStickerSvg(index, isSticker) {
     if (!isSticker) {
-        return `
-            <svg viewBox="0 0 100 100" class="sticker-svg" style="opacity: 0.22; filter: none;">
-                ${getShapeMarkup(index, "#8C9A8E", "none", 3)}
-            </svg>
-        `;
+        return "";
     }
     return `
         <svg viewBox="0 0 100 100" class="sticker-svg">
@@ -911,85 +907,6 @@ function createBoardItemDOM(board, isLocal) {
     return item;
 }
 
-    // 3. 삭제 버튼 클릭 (완전 삭제)
-    if (isLocal) {
-        const btnDelete = item.querySelector(".btn-delete-board");
-        if (btnDelete) {
-            btnDelete.addEventListener("click", async (e) => {
-                e.stopPropagation();
-                
-                // 해당 보드의 편집 권한(여자친구 PIN) 확인
-                const hasPermission = localStorage.getItem(`is_editor_${board.id}`) === "true";
-                if (!hasPermission) {
-                    const pin = prompt(`'${board.title}' 판을 삭제하시겠습니까?\n이 작업을 완료하려면 편집용 비밀번호 PIN을 입력하세요:`);
-                    if (pin === null) return; // 취소
-                    
-                    const requiredPin = board.editor_pin || "1234";
-                    if (pin !== requiredPin) {
-                        alert("비밀번호가 올바르지 않습니다.");
-                        return;
-                    }
-                } else {
-                    if (!confirm(`'${board.title}' 판을 삭제하시겠습니까?\n(실제 데이터와 등록된 스티커 목록이 모두 영구적으로 삭제됩니다.)`)) {
-                        return;
-                    }
-                }
-                
-                loadingSpinner.classList.remove("hidden");
-                const wasActive = board.id === currentBoardId;
-                
-                // 실제 데이터 삭제 API 호출
-                await apiDeleteBoard(board.id);
-                
-                // 로컬 기기 리스트에서 제외
-                removeRegisteredBoard(board.id);
-                
-                if (wasActive) {
-                    const remaining = getRegisteredBoards();
-                    if (remaining.length > 0) {
-                        currentBoardId = remaining[0].id;
-                        currentBoard = remaining[0];
-                        localStorage.setItem("current_board_id", currentBoardId);
-                        isEditorMode = localStorage.getItem(`is_editor_${currentBoardId}`) === "true";
-                        updateRoleUI();
-                        
-                        // URL 갱신
-                        const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
-                        window.history.replaceState({ path: newUrl }, "", newUrl);
-                        
-                        sidebar.classList.remove("open");
-                        sidebarOverlay.classList.add("hidden");
-                        await refreshApp();
-                    } else {
-                        // 모든 보드가 지워진 경우 초기 화면으로
-                        currentBoardId = "";
-                        currentBoard = null;
-                        localStorage.removeItem("current_board_id");
-                        isEditorMode = false;
-                        updateRoleUI();
-                        
-                        // URL 갱신 (쿼리 파라미터 비우기)
-                        const newUrl = `${window.location.origin}${window.location.pathname}`;
-                        window.history.replaceState({ path: newUrl }, "", newUrl);
-                        
-                        welcomeScreen.classList.remove("hidden");
-                        appContent.classList.add("hidden");
-                        sidebar.classList.remove("open");
-                        sidebarOverlay.classList.add("hidden");
-                        loadingSpinner.classList.add("hidden");
-                    }
-                } else {
-                    renderBoardList();
-                    loadingSpinner.classList.add("hidden");
-                }
-                showToast("스티커판이 완전히 삭제되었습니다.");
-            });
-        }
-    }
-
-    return item;
-}
-
 // ==========================================
 // 6. UI 업데이트 및 렌더링 로직
 // ==========================================
@@ -1000,13 +917,27 @@ async function refreshApp() {
         // 1. 보드 정보 로드
         let board = await apiGetBoard(currentBoardId);
         if (!board) {
+            const registered = getRegisteredBoards();
+            if (registered.length > 0) {
+                currentBoardId = registered[0].id;
+                localStorage.setItem("current_board_id", currentBoardId);
+                board = await apiGetBoard(currentBoardId);
+            }
+        }
+        if (!board && (currentBoardId === "DEFAULT" || !currentBoardId)) {
+            currentBoardId = "VEGE_BOARD_001";
+            localStorage.setItem("current_board_id", currentBoardId);
+            board = await apiGetBoard(currentBoardId);
+        }
+
+        if (!board) {
             // 보드가 존재하지 않음 -> 초기 설정 화면 노출
             appContent.classList.add("hidden");
             welcomeScreen.classList.remove("hidden");
             
             // 설정 폼에 현재 보드 ID 자동 완성 및 테스트값 미리 채우기
             if (currentBoardId === "DEFAULT" || currentBoardId.startsWith("TEST-")) {
-                setupBoardId.value = currentBoardId === "DEFAULT" ? "TEST-COSMIC-BOARD" : currentBoardId;
+                setupBoardId.value = currentBoardId === "DEFAULT" ? "VEGE_BOARD_001" : currentBoardId;
                 setupTitle.value = "채소가게 칭찬판 💖";
                 setupTargetCount.value = "30";
                 setupReward.value = "맛있는 디저트 데이트! 🍦";
@@ -1099,6 +1030,59 @@ async function refreshApp() {
         // 로딩 종료 보장
         loadingSpinner.classList.add("hidden");
     }
+}
+// 단일 슬롯 DOM 요소 생성 헬퍼
+function createSlotElement(i) {
+    const slot = document.createElement("div");
+    slot.className = "grid-slot";
+
+    let pressTimer = null;
+    let preventClick = false;
+
+    const startPress = (e) => {
+        if (e.type === 'mousedown' && e.button !== 0) return;
+        preventClick = false;
+        pressTimer = setTimeout(() => {
+            preventClick = true;
+            const stickerData = currentStickers.find(s => s.sticker_index === i);
+            handleSlotLongPress(i, !!stickerData);
+        }, 600);
+    };
+
+    const cancelPress = () => {
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+    };
+
+    const endPress = () => {
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+    };
+
+    slot.addEventListener("mousedown", startPress);
+    slot.addEventListener("mouseup", endPress);
+    slot.addEventListener("mouseleave", cancelPress);
+
+    slot.addEventListener("touchstart", startPress, { passive: true });
+    slot.addEventListener("touchend", endPress, { passive: true });
+    slot.addEventListener("touchcancel", cancelPress, { passive: true });
+    slot.addEventListener("touchmove", cancelPress, { passive: true });
+
+    slot.addEventListener("click", (e) => {
+        if (preventClick) {
+            e.preventDefault();
+            preventClick = false;
+            return;
+        }
+        const stickerData = currentStickers.find(s => s.sticker_index === i);
+        handleSlotClick(i, !!stickerData);
+    });
+
+    return slot;
 }
 
 // 날짜 포맷 함수

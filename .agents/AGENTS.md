@@ -26,3 +26,7 @@
 - **Non-Technical Language (비전공자 맞춤)**: Write patch notes in clear, friendly, non-technical language that anyone can easily understand. Avoid developer jargon (e.g., API, CSS translate3d, Reflow, DB schema, JSON, E2E).
 - **Frontend & UI/UX Scope Only**: Focus strictly on user-facing frontend features, visual design, screen animations, and user experience enhancements.
 - **Single UI Artifact Format**: Never create individual `PATCH_NOTES.md` files inside project repository directories. Always generate ONLY ONE unified, beautiful Artifact document (`PATCH_NOTES_vX.X.X.md`) presented directly in the IDE UI for the user.
+
+## Rule 7: Localhost Testing and Safe Live Deployment Workflow
+- **Local First & Localhost Verification**: Always apply code modifications to local workspace files first. Perform preview testing on localhost (`http://localhost:...`) so changes can be verified safely without immediately affecting live deployed sites.
+- **Explicit Push / Deployment Request Required**: Do not commit and push changes to live production GitHub repositories (`main` branch) until local verification is complete and the user explicitly requests or confirms deployment.
