@@ -23,12 +23,26 @@
     --font-app: 'Nunito', 'Jua', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* 2. 전역 스타일 초기화 */
-* {
+/* 2. 전역 스타일 초기화 & iOS 텍스트 선택 방지 */
+*, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
     -webkit-tap-highlight-color: transparent; /* 모바일 터치 하이라이트 제거 */
+    -webkit-user-select: none; /* iOS Safari 텍스트 선택 및 드래그 방지 */
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none; /* 텍스트 드래그 선택 방지 */
+    -webkit-touch-callout: none; /* iOS 롱프레스 말풍선/콜아웃 방지 */
+}
+
+/* 편집자가 직접 타이핑/입력하는 필드는 정상 텍스트 선택 및 드래그 허용 */
+input, textarea, [contenteditable="true"] {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+    -webkit-touch-callout: default !important;
 }
 
 body {
