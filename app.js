@@ -220,7 +220,8 @@ async function apiCreateBoard(board) {
                 reward_text: board.reward_text,
                 editor_pin: board.editor_pin || "1234",
                 reader_role_name: board.reader_role_name || "남자친구 모드 (조회 전용)",
-                editor_role_name: board.editor_role_name || "여자친구 모드 (부착 가능)"
+                editor_role_name: board.editor_role_name || "여자친구 모드 (부착 가능)",
+                theme_color: board.theme_color || "#4A5568"
             };
             // created_at이 있으면 포함
             if (board.created_at) {
@@ -1443,7 +1444,13 @@ function applyThemeColor(hex, save = false) {
 // 팔레트 모달 이벤트 핸들러 바인딩
 if (btnColorPalette) {
     btnColorPalette.addEventListener("click", () => {
-        const savedColor = localStorage.getItem(`board_theme_color_${currentBoardId}`) || (currentBoard && currentBoard.theme_color) || "#4A5568";
+        if (!isEditorMode) {
+            modalPin.classList.remove("hidden");
+            if (inputPin) inputPin.focus();
+            showToast("테마 색상 변경은 편집자 권한(비밀번호 PIN 인증)이 필요합니다. 🔒");
+            return;
+        }
+        const savedColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`) || "#4A5568";
         updatePaletteUI(savedColor);
         modalColorPalette.classList.remove("hidden");
     });
@@ -1482,6 +1489,10 @@ document.querySelectorAll(".color-preset-btn").forEach(btn => {
 
 if (btnColorReset) {
     btnColorReset.addEventListener("click", () => {
+        if (!isEditorMode) {
+            showToast("편집 권한이 필요합니다. 🔒");
+            return;
+        }
         updatePaletteUI("#4A5568");
         applyThemeColor("#4A5568", true);
         showToast("테마 색상이 기본값(#4A5568)으로 초기화되었습니다.");
@@ -1490,6 +1501,10 @@ if (btnColorReset) {
 
 if (btnColorApply) {
     btnColorApply.addEventListener("click", () => {
+        if (!isEditorMode) {
+            showToast("편집 권한이 필요합니다. 🔒");
+            return;
+        }
         const r = parseInt(rangeR.value, 10) || 0;
         const g = parseInt(rangeG.value, 10) || 0;
         const b = parseInt(rangeB.value, 10) || 0;
