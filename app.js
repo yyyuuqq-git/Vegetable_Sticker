@@ -144,6 +144,22 @@ const btnMemoEditSave = document.getElementById("btn-memo-edit-save");
 // 공용 버튼 트리거
 const btnShare = document.getElementById("btn-share");
 const btnSettings = document.getElementById("btn-settings");
+const btnColorPalette = document.getElementById("btn-color-palette");
+
+// RGB 색상 팔레트 모달 요소
+const modalColorPalette = document.getElementById("modal-color-palette");
+const btnColorClose = document.getElementById("btn-color-close");
+const btnColorReset = document.getElementById("btn-color-reset");
+const btnColorApply = document.getElementById("btn-color-apply");
+const colorPreviewBox = document.getElementById("color-preview-box");
+const colorPreviewText = document.getElementById("color-preview-text");
+const rangeR = document.getElementById("range-r");
+const rangeG = document.getElementById("range-g");
+const rangeB = document.getElementById("range-b");
+const valR = document.getElementById("val-r");
+const valG = document.getElementById("val-g");
+const valB = document.getElementById("val-b");
+const inputCustomColor = document.getElementById("input-custom-color");
 
 // ==========================================
 // 4. 데이터베이스 / 로컬스토리지 통신 매핑 API
@@ -1025,6 +1041,10 @@ async function refreshApp() {
         if (editEditorName) editEditorName.value = localStorage.getItem("global_editor_role_name") || currentBoard.editor_role_name || "여자친구 모드 (부착 가능)";
         if (editPin) editPin.value = localStorage.getItem("global_editor_pin") || currentBoard.editor_pin || "";
 
+        // 6. 보드 테마 색상 적용
+        const savedThemeColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`) || "#4A5568";
+        applyThemeColor(savedThemeColor, false);
+
         // 역할 UI 업데이트 (역할 명칭 반영)
         updateRoleUI();
 
@@ -1329,6 +1349,156 @@ btnSettings.addEventListener("click", () => {
 btnSettingsClose.addEventListener("click", () => {
     modalSettings.classList.add("hidden");
 });
+
+// ==========================================
+// RGB 색상 팔레트 및 테마 제어 로직
+// ==========================================
+
+function hexToRgb(hex) {
+    if (!hex) return { r: 74, g: 85, b: 104 };
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+    }
+    const num = parseInt(hex, 16);
+    return {
+        r: (num >> 16) & 255,
+        g: (num >> 8) & 255,
+        b: num & 255
+    };
+}
+
+function rgbToHex(r, g, b) {
+    const toHex = (c) => {
+        const hex = Math.max(0, Math.min(255, c)).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+    };
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+}
+
+function adjustColorBrightness(hex, percent) {
+    const { r, g, b } = hexToRgb(hex);
+    const num = percent / 100;
+    const rNew = Math.round(r * (1 + num));
+    const gNew = Math.round(g * (1 + num));
+    const bNew = Math.round(b * (1 + num));
+    return rgbToHex(
+        Math.max(0, Math.min(255, rNew)),
+        Math.max(0, Math.min(255, gNew)),
+        Math.max(0, Math.min(255, bNew))
+    );
+}
+
+function updatePaletteUI(hex) {
+    if (!hex) hex = "#4A5568";
+    hex = hex.toUpperCase();
+    const { r, g, b } = hexToRgb(hex);
+    
+    if (rangeR) rangeR.value = r;
+    if (rangeG) rangeG.value = g;
+    if (rangeB) rangeB.value = b;
+    if (valR) valR.textContent = r;
+    if (valG) valG.textContent = g;
+    if (valB) valB.textContent = b;
+    if (inputCustomColor) inputCustomColor.value = hex;
+    
+    if (colorPreviewBox) {
+        colorPreviewBox.style.backgroundColor = hex;
+    }
+    if (colorPreviewText) {
+        colorPreviewText.textContent = hex;
+    }
+    
+    const presetBtns = document.querySelectorAll(".color-preset-btn");
+    presetBtns.forEach(btn => {
+        if (btn.getAttribute("data-color").toUpperCase() === hex) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+}
+
+function applyThemeColor(hex, save = false) {
+    if (!hex) hex = "#4A5568";
+    hex = hex.toUpperCase();
+    
+    const darkHex = adjustColorBrightness(hex, -25);
+    
+    document.documentElement.style.setProperty("--stitch-primary", hex);
+    document.documentElement.style.setProperty("--stitch-primary-dark", darkHex);
+    
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute("content", hex);
+    
+    if (save && currentBoardId) {
+        localStorage.setItem(`board_theme_color_${currentBoardId}`, hex);
+        if (currentBoard) {
+            currentBoard.theme_color = hex;
+            apiCreateBoard(currentBoard);
+        }
+    }
+}
+
+// 팔레트 모달 이벤트 핸들러 바인딩
+if (btnColorPalette) {
+    btnColorPalette.addEventListener("click", () => {
+        const savedColor = localStorage.getItem(`board_theme_color_${currentBoardId}`) || (currentBoard && currentBoard.theme_color) || "#4A5568";
+        updatePaletteUI(savedColor);
+        modalColorPalette.classList.remove("hidden");
+    });
+}
+
+if (btnColorClose) {
+    btnColorClose.addEventListener("click", () => {
+        modalColorPalette.classList.add("hidden");
+    });
+}
+
+function onRgbSliderChange() {
+    const r = parseInt(rangeR.value, 10) || 0;
+    const g = parseInt(rangeG.value, 10) || 0;
+    const b = parseInt(rangeB.value, 10) || 0;
+    const hex = rgbToHex(r, g, b);
+    updatePaletteUI(hex);
+}
+
+if (rangeR) rangeR.addEventListener("input", onRgbSliderChange);
+if (rangeG) rangeG.addEventListener("input", onRgbSliderChange);
+if (rangeB) rangeB.addEventListener("input", onRgbSliderChange);
+
+if (inputCustomColor) {
+    inputCustomColor.addEventListener("input", (e) => {
+        updatePaletteUI(e.target.value);
+    });
+}
+
+document.querySelectorAll(".color-preset-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const color = btn.getAttribute("data-color");
+        updatePaletteUI(color);
+    });
+});
+
+if (btnColorReset) {
+    btnColorReset.addEventListener("click", () => {
+        updatePaletteUI("#4A5568");
+        applyThemeColor("#4A5568", true);
+        showToast("테마 색상이 기본값(#4A5568)으로 초기화되었습니다.");
+    });
+}
+
+if (btnColorApply) {
+    btnColorApply.addEventListener("click", () => {
+        const r = parseInt(rangeR.value, 10) || 0;
+        const g = parseInt(rangeG.value, 10) || 0;
+        const b = parseInt(rangeB.value, 10) || 0;
+        const hex = rgbToHex(r, g, b);
+        applyThemeColor(hex, true);
+        modalColorPalette.classList.add("hidden");
+        showToast(`테마 색상이 ${hex} (으)로 변경되었습니다! 🎨`);
+    });
+}
 
 // 칭찬판 코드 스위칭
 btnSwitchBoard.addEventListener("click", async () => {

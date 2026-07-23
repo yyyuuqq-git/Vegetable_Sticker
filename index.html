@@ -70,6 +70,11 @@
                 </button>
                 <h1 id="app-main-logo" class="logo">채소가게</h1>
             </div>
+            <div class="header-actions">
+                <button id="btn-color-palette" class="icon-button" title="색상 변경">
+                    <span class="material-icons">palette</span>
+                </button>
+            </div>
         </header>
 
         <!-- 로딩 화면 -->
@@ -323,6 +328,73 @@
             <div class="modal-actions" style="margin-top: 24px;">
                 <button id="btn-board-edit-close" class="btn btn-secondary">닫기</button>
                 <button id="btn-board-edit-save" class="btn btn-primary hidden">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- H. RGB 색상 팔레트 모달 -->
+    <div id="modal-color-palette" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 420px; padding: 22px;">
+            <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-icons" style="color: var(--stitch-primary, #4A5568);">palette</span> 테마 색상 설정 (RGB 팔레트)
+            </h3>
+            <p class="modal-desc">원하는 RGB 색상을 선택하거나 슬라이더를 조절하여 테마를 꾸며보세요!</p>
+            
+            <!-- 실시간 색상 미리보기 박스 -->
+            <div id="color-preview-box" class="color-preview-box">
+                <span id="color-preview-text" class="color-preview-text">#4A5568</span>
+            </div>
+
+            <!-- 1. 추천 대표 프리셋 색상 -->
+            <div class="color-preset-section">
+                <label class="section-subtitle">✨ 추천 테마 색상</label>
+                <div class="preset-grid">
+                    <button type="button" class="color-preset-btn" data-color="#4A5568" style="background-color: #4A5568;" title="클래식 슬레이트"></button>
+                    <button type="button" class="color-preset-btn" data-color="#6B46C1" style="background-color: #6B46C1;" title="코스믹 퍼플"></button>
+                    <button type="button" class="color-preset-btn" data-color="#1E3A8A" style="background-color: #1E3A8A;" title="딥 블루"></button>
+                    <button type="button" class="color-preset-btn" data-color="#065F46" style="background-color: #065F46;" title="에메랄드 그린"></button>
+                    <button type="button" class="color-preset-btn" data-color="#D97706" style="background-color: #D97706;" title="웜 오렌지"></button>
+                    <button type="button" class="color-preset-btn" data-color="#BE123C" style="background-color: #BE123C;" title="로즈 핑크"></button>
+                    <button type="button" class="color-preset-btn" data-color="#3B82F6" style="background-color: #3B82F6;" title="스카이 블루"></button>
+                    <button type="button" class="color-preset-btn" data-color="#111827" style="background-color: #111827;" title="다크 차콜"></button>
+                </div>
+            </div>
+
+            <!-- 2. RGB 슬라이더 및 커스텀 피커 -->
+            <div class="rgb-controls-section">
+                <div class="rgb-slider-group">
+                    <div class="rgb-slider-label">
+                        <span style="color: #EF4444; font-weight: bold;">R</span> (Red)
+                        <span id="val-r" class="rgb-val">74</span>
+                    </div>
+                    <input type="range" id="range-r" min="0" max="255" value="74" class="rgb-slider slider-red">
+                </div>
+                <div class="rgb-slider-group">
+                    <div class="rgb-slider-label">
+                        <span style="color: #10B981; font-weight: bold;">G</span> (Green)
+                        <span id="val-g" class="rgb-val">85</span>
+                    </div>
+                    <input type="range" id="range-g" min="0" max="255" value="85" class="rgb-slider slider-green">
+                </div>
+                <div class="rgb-slider-group">
+                    <div class="rgb-slider-label">
+                        <span style="color: #3B82F6; font-weight: bold;">B</span> (Blue)
+                        <span id="val-b" class="rgb-val">104</span>
+                    </div>
+                    <input type="range" id="range-b" min="0" max="255" value="104" class="rgb-slider slider-blue">
+                </div>
+                <div class="color-picker-input-row">
+                    <label for="input-custom-color" style="font-size: 13px; font-weight: bold; color: var(--text-primary);">🎨 직접 선택:</label>
+                    <input type="color" id="input-custom-color" value="#4A5568" class="color-input-field">
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 18px; display: flex; justify-content: space-between; gap: 8px;">
+                <button id="btn-color-reset" class="btn btn-secondary btn-sm">기본값 복원</button>
+                <div style="display: flex; gap: 8px;">
+                    <button id="btn-color-close" class="btn btn-secondary">닫기</button>
+                    <button id="btn-color-apply" class="btn btn-primary">적용하기 🎨</button>
+                </div>
             </div>
         </div>
     </div>
