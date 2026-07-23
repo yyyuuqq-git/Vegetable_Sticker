@@ -205,30 +205,28 @@ async function apiGetBoard(boardId) {
 
 // 보드 생성 또는 수정
 async function apiCreateBoard(board) {
-    // 로컬 캐시에는 전체 board 객체를 항상 저장 (역할명 등 로컬 전용 필드 포함)
+    // 로컬 캐시에는 전체 board 객체를 항상 저장 (역할명, 테마색 등 로컬 전용 필드 포함)
     localStorage.setItem(`board_${board.id}`, JSON.stringify(board));
+    if (board.theme_color) {
+        localStorage.setItem(`board_theme_color_${board.id}`, board.theme_color);
+    }
 
     if (isLocalMode || !supabaseClient) {
         return { success: true };
     } else {
         try {
-            // Supabase praise_boards 스키마에 존재하는 컬럼만 추출하여 전송
+            // Supabase praise_boards DB 스키마 표준 컬럼만 전송 (PGRST204 스키마 캐시 오류 방지)
             const dbBoard = {
                 id: board.id,
                 title: board.title,
                 target_count: board.target_count,
                 reward_text: board.reward_text,
-                editor_pin: board.editor_pin || "1234",
-                reader_role_name: board.reader_role_name || "남자친구 모드 (조회 전용)",
-                editor_role_name: board.editor_role_name || "여자친구 모드 (부착 가능)",
-                theme_color: board.theme_color || "#4A5568"
+                editor_pin: board.editor_pin || "1234"
             };
-            // created_at이 있으면 포함
             if (board.created_at) {
                 dbBoard.created_at = board.created_at;
             }
 
-            console.log("Supabase upsert 요청 데이터:", dbBoard);
             const { error } = await supabaseClient
                 .from("praise_boards")
                 .upsert(dbBoard);
