@@ -382,6 +382,63 @@ async function apiRemoveSticker(boardId, index) {
     }
 }
 
+// 테마 색상 메타데이터 DB/로컬 저장 (인덱스 999 전용 레코드 활용 - 스키마 호환 100% 보장)
+async function apiSaveThemeColor(boardId, hex) {
+    if (!hex || !boardId) return;
+    hex = hex.toUpperCase();
+    const memoStr = `[theme:${hex}]`;
+    const nowISO = new Date().toISOString();
+
+    localStorage.setItem(`board_theme_color_${boardId}`, hex);
+
+    if (isLocalMode || !supabaseClient) {
+        let current = await apiGetStickers(boardId);
+        let themeSticker = current.find(s => s.sticker_index === 999);
+        if (themeSticker) {
+            themeSticker.memo = memoStr;
+            themeSticker.updated_at = nowISO;
+        } else {
+            current.push({
+                board_id: boardId,
+                sticker_index: 999,
+                memo: memoStr,
+                created_at: nowISO,
+                updated_at: nowISO
+            });
+        }
+        localStorage.setItem(`stickers_${boardId}`, JSON.stringify(current));
+        return true;
+    } else {
+        try {
+            // 1. Foreign Key Constraint(23503) 에러 방지: praise_boards 레코드가 DB에 선행 생성되도록 보장
+            if (currentBoard) {
+                await apiCreateBoard(currentBoard);
+            }
+
+            // 2. Unique Constraint(23505) 에러 방지: onConflict: "board_id,sticker_index" 안전 upsert
+            const { error } = await supabaseClient
+                .from("praise_stickers")
+                .upsert({
+                    board_id: boardId,
+                    sticker_index: 999,
+                    memo: memoStr,
+                    created_at: nowISO,
+                    updated_at: nowISO
+                }, { onConflict: "board_id,sticker_index" });
+
+            if (error) {
+                console.error("테마 색상 DB 저장 실패:", error);
+                return false;
+            }
+            console.log("테마 색상 DB 저장 성공:", hex);
+            return true;
+        } catch (e) {
+            console.error("테마 색상 DB 저장 중 예외 발생:", e);
+            return false;
+        }
+    }
+}
+
 // ==========================================
 // 5. 손그림 우주 스티커 SVG 드로잉 빌더
 // ==========================================
@@ -1972,10 +2029,36 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 탭 전환 시(앱으로 다시 돌아왔을 때) 1회 자동 동기화 (불필요한 5초 백그라운드 폴링 완전 제거)
+// 모바일 브라우저 백그라운드/네트워크 3초 자동 동기화 헬퍼 (편집자 테마 색상 및 스티커 실시간 동기화)
+let syncInterval = null;
+function startAutoSync() {
+    if (syncInterval) clearInterval(syncInterval);
+    syncInterval = setInterval(async () => {
+        if (!document.hidden && currentBoardId) {
+            const rawStickers = await apiGetStickers(currentBoardId);
+            const themeMeta = rawStickers.find(s => s.sticker_index === 999);
+            if (themeMeta && themeMeta.memo) {
+                const match = themeMeta.memo.match(/\[theme:(#[0-9A-Fa-f]{6})\]/);
+                if (match) {
+                    const remoteColor = match[1];
+                    const localColor = localStorage.getItem(`board_theme_color_${currentBoardId}`);
+                    if (remoteColor !== localColor) {
+                        localStorage.setItem(`board_theme_color_${currentBoardId}`, remoteColor);
+                        if (currentBoard) currentBoard.theme_color = remoteColor;
+                        applyThemeColor(remoteColor, false);
+                    }
+                }
+            }
+        }
+    }, 3000);
+}
+
+    // 탭 전환 시(앱으로 다시 돌아왔을 때) 1회 자동 동기화
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
             refreshApp();
         }
     });
+
+    startAutoSync();
 });
