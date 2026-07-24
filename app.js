@@ -31,9 +31,9 @@ function isVegetableBoard(b) {
     const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase();
     const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase();
     if (idStr.startsWith("TEST-BOARD-") || idStr === "TEST-BOARD") return false;
-    if (idStr.startsWith("CAT") || idStr.includes("KITTY") || titleStr.includes("고양이") || titleStr.includes("야옹")) return false;
-    if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || titleStr.includes("채소")) return true;
-    return false;
+    if (idStr === "CAT-BOARD" || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") || titleStr.includes("고양이") || titleStr.includes("야옹")) return false;
+    if (idStr === "TEST-COSMIC-BOARD" || idStr.startsWith("MOON") || idStr.includes("COSMIC") || idStr.includes("LUNAR") || idStr.startsWith("TEST-COSMIC") || titleStr.includes("달") || titleStr.includes("우주") || titleStr.includes("별")) return false;
+    return true;
 }
 
 let initialBoardId = localStorage.getItem("current_board_id");
@@ -596,28 +596,29 @@ async function apiGetAllBoards() {
     }
 }
 
-// 다음 순차적 보드 코드 생성 (기존 보드 중 마지막 숫자 + 1, 예: CHAEDO_1 -> CHAEDO_2)
+// 다음 순차적 보드 코드 생성 (기존 보드 중 마지막 숫자 + 1, 예: CHAEDO_1, CHAEDO_2)
 async function getNextSequentialBoardCode() {
     const allBoards = await apiGetAllBoards();
     let maxNum = 0;
-    let prefix = "CHAEDO_";
+    const basePrefix = "CHAEDO_";
     
     allBoards.forEach(b => {
-        if (b && b.id && !b.id.startsWith("TEST-BOARD-")) {
-            const match = String(b.id).match(/^(.*?)(\d+)$/);
-            if (match) {
-                const currentPrefix = match[1];
-                const num = parseInt(match[2], 10);
-                if (!isNaN(num) && num > maxNum) {
-                    maxNum = num;
-                    if (currentPrefix) prefix = currentPrefix;
+        if (b && b.id) {
+            const idStr = String(b.id).toUpperCase();
+            if (idStr.startsWith("CHAEDO_") || idStr.startsWith("CHAEDO")) {
+                const match = idStr.match(/CHAEDO_?(\d+)$/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (!isNaN(num) && num > maxNum) {
+                        maxNum = num;
+                    }
                 }
             }
         }
     });
     
     const nextNum = maxNum + 1;
-    return `${prefix}${nextNum}`;
+    return `${basePrefix}${nextNum}`;
 }
 
 // 보드 이름 수정 API
