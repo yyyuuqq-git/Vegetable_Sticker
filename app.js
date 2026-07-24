@@ -596,29 +596,35 @@ async function apiGetAllBoards() {
     }
 }
 
-// 다음 순차적 보드 코드 생성 (기존 보드 중 마지막 숫자 + 1, 예: CHAEDO_1, CHAEDO_2)
-async function getNextSequentialBoardCode() {
+// 다음 순차적 보드 코드 생성 (해당 스티커판의 기존 코드에 _x(x는 자연수)를 붙여 생성)
+async function getNextSequentialBoardCode(baseBoardId) {
     const allBoards = await apiGetAllBoards();
-    let maxNum = 0;
-    const basePrefix = "CHAEDO_";
+    let sourceId = baseBoardId || currentBoardId || "CHAEDO";
     
+    let basePrefix = String(sourceId).trim().toUpperCase().replace(/_\d+$/, "");
+    if (basePrefix.endsWith("_")) {
+        basePrefix = basePrefix.slice(0, -1);
+    }
+    if (!basePrefix) basePrefix = "CHAEDO";
+
+    let maxNum = 0;
+
     allBoards.forEach(b => {
         if (b && b.id) {
             const idStr = String(b.id).toUpperCase();
-            if (idStr.startsWith("CHAEDO_") || idStr.startsWith("CHAEDO")) {
-                const match = idStr.match(/CHAEDO_?(\d+)$/);
-                if (match) {
-                    const num = parseInt(match[1], 10);
-                    if (!isNaN(num) && num > maxNum) {
-                        maxNum = num;
-                    }
+            const regex = new RegExp(`^${basePrefix.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}_(\\d+)$`, "i");
+            const match = idStr.match(regex);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (!isNaN(num) && num > maxNum) {
+                    maxNum = num;
                 }
             }
         }
     });
-    
+
     const nextNum = maxNum + 1;
-    return `${basePrefix}${nextNum}`;
+    return `${basePrefix}_${nextNum}`;
 }
 
 // 보드 이름 수정 API
