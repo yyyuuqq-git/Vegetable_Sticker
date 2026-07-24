@@ -41,7 +41,7 @@
 - **CRITICAL**: Live sticker boards belonging to one app (`칭찬스티커 (달)`, `칭찬스티커 (고양이)`, `칭찬스티커 (채소가게)`) MUST NEVER appear in any other app's board list or state.
 - Board filter helpers (`isCatBoard`, `isMoonBoard`, `isVegetableBoard`) must strictly exclude all default board IDs, ID prefixes, and title keywords of all opposing apps and test boards:
   - **Test Boards**: Exclude IDs starting with `TEST-BOARD-` or matching `TEST-BOARD`.
-  - **Moon App (`달`)**: Primary board `TEST-COSMIC-BOARD`. Exclude IDs starting with `MOON`, `COSMIC`, `LUNAR`, `TEST-COSMIC`, or titles containing `달`, `우주`, `MOON`, `COSMIC`, `LUNAR`, `별`.
+  - **Moon App (`달`)**: Primary board `TEST-COSMIC-BOARD`. Exclude IDs starting with `BON_WOOK`, `MOON`, `COSMIC`, `LUNAR`, `TEST-COSMIC`, or titles containing `달`, `우주`, `MOON`, `COSMIC`, `LUNAR`, `별`.
   - **Cat App (`고양이`)**: Primary board `CAT-BOARD`. Exclude IDs starting with `CAT`, `KITTY`, `MEOW`, or titles containing `고양이`, `야옹`, `CAT`, `KITTY`, `MEOW`.
   - **Vegetable App (`채소가게`)**: Primary board prefix `CHAEDO_`. Exclude IDs starting with `CHAEDO`, `VEGE`, `VEGETABLE`, or titles containing `채소`, `야채`, `당근`, `CHAEDO`, `VEGE`.
 - Ensure each app remains permissive towards its own users' custom board IDs while guaranteeing 100% isolation from opposing apps.
