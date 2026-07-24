@@ -1064,6 +1064,9 @@ async function refreshApp() {
         // 보드가 정상적으로 로드된 경우 설정창 숨기고 콘텐츠 노출
         welcomeScreen.classList.add("hidden");
         currentBoard = board;
+        if (board && board.editor_pin) {
+            localStorage.setItem(`board_pin_${board.id}`, board.editor_pin);
+        }
         setupRealtimeSubscription(board.id);
 
         // 로컬 보드 목록 관리 및 갱신
@@ -1364,18 +1367,19 @@ function showToast(message) {
 
 // PIN 번호 확인 처리
 btnPinSubmit.addEventListener("click", () => {
-    const pin = inputPin.value;
-    const requiredPin = localStorage.getItem("global_editor_pin") || currentBoard.editor_pin || "";
+    const pin = inputPin.value.trim();
+    const requiredPin = (currentBoard && currentBoard.editor_pin) || localStorage.getItem(`board_pin_${currentBoardId}`) || "1234";
 
     if (pin === requiredPin) {
         isEditorMode = true;
-        localStorage.setItem("is_editor", "true"); // 로컬스토리지에 인증 승인 기록
+        localStorage.setItem("is_editor", "true");
+        localStorage.setItem(`board_pin_${currentBoardId}`, pin);
         inputPin.value = "";
         pinError.classList.add("hidden");
         modalPin.classList.add("hidden");
         updateRoleUI();
         refreshApp();
-        showToast("여자친구 편집 권한이 승인되었습니다! 🌸");
+        showToast("편집 권한이 승인되었습니다! 🌸");
     } else {
         pinError.classList.remove("hidden");
     }
@@ -1425,12 +1429,15 @@ btnCreateBoard.addEventListener("click", async () => {
     // 순차적 보드 코드 생성 (마지막 숫자 + 1, 예: 채소가게/달의 마지막 숫자가 2면 다음은 3)
     const finalCode = await getNextSequentialBoardCode();
 
+    const activeColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`) || "#EC4899";
+    const activePin = (currentBoard && currentBoard.editor_pin) || localStorage.getItem(`board_pin_${currentBoardId}`) || "1234";
+
     const newBoard = {
         id: finalCode,
         title: finalTitle,
         target_count: 30,
         reward_text: "새로운 선물 지정하기",
-        editor_pin: currentBoard ? currentBoard.editor_pin : "1234",
+        editor_pin: activePin,
         created_at: new Date().toISOString()
     };
 
@@ -1438,6 +1445,9 @@ btnCreateBoard.addEventListener("click", async () => {
     if (result.success) {
         currentBoardId = finalCode;
         localStorage.setItem("current_board_id", finalCode);
+        localStorage.setItem(`board_pin_${finalCode}`, activePin);
+        localStorage.setItem(`board_theme_color_${finalCode}`, activeColor);
+        await apiSaveThemeColor(finalCode, activeColor);
         localStorage.setItem("is_editor", "true");
         inputCreateBoardTitle.value = "";
         isEditorMode = true;
@@ -1684,7 +1694,7 @@ btnSettingsSave.addEventListener("click", async () => {
         localStorage.setItem("global_app_title", newAppTitle);
         if (appMainLogo) appMainLogo.textContent = newAppTitle;
     }
-    localStorage.setItem("global_editor_pin", newPin);
+    if (newPin) localStorage.setItem(`board_pin_${currentBoardId}`, newPin);
     localStorage.setItem("global_reader_role_name", newReaderName);
     localStorage.setItem("global_editor_role_name", newEditorName);
 
