@@ -1562,9 +1562,18 @@ function updatePaletteUI(hex) {
     if (rangeR) rangeR.value = r;
     if (rangeG) rangeG.value = g;
     if (rangeB) rangeB.value = b;
-    if (valR) valR.textContent = r;
-    if (valG) valG.textContent = g;
-    if (valB) valB.textContent = b;
+    if (valR) {
+        if ('value' in valR) valR.value = r;
+        valR.textContent = r;
+    }
+    if (valG) {
+        if ('value' in valG) valG.value = g;
+        valG.textContent = g;
+    }
+    if (valB) {
+        if ('value' in valB) valB.value = b;
+        valB.textContent = b;
+    }
     if (inputCustomColor) inputCustomColor.value = hex;
     
     if (colorPreviewBox) {
@@ -1643,9 +1652,66 @@ function onRgbSliderChange() {
     updatePaletteUI(hex);
 }
 
+function onRgbNumInputChange(isBlur = false) {
+    let r = parseInt(valR ? valR.value : "0", 10);
+    let g = parseInt(valG ? valG.value : "0", 10);
+    let b = parseInt(valB ? valB.value : "0", 10);
+
+    if (isNaN(r)) r = 0;
+    if (isNaN(g)) g = 0;
+    if (isNaN(b)) b = 0;
+
+    if (r > 255) r = 255;
+    if (g > 255) g = 255;
+    if (b > 255) b = 255;
+    if (r < 0) r = 0;
+    if (g < 0) g = 0;
+    if (b < 0) b = 0;
+
+    if (isBlur) {
+        if (valR) valR.value = r;
+        if (valG) valG.value = g;
+        if (valB) valB.value = b;
+    }
+
+    if (rangeR) rangeR.value = r;
+    if (rangeG) rangeG.value = g;
+    if (rangeB) rangeB.value = b;
+
+    const hex = rgbToHex(r, g, b);
+    if (inputCustomColor) inputCustomColor.value = hex;
+    if (colorPreviewBox) colorPreviewBox.style.backgroundColor = hex;
+    if (colorPreviewText) colorPreviewText.textContent = hex;
+
+    const presetBtns = document.querySelectorAll(".color-preset-btn");
+    presetBtns.forEach(btn => {
+        if (btn.getAttribute("data-color").toUpperCase() === hex) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+}
+
 if (rangeR) rangeR.addEventListener("input", onRgbSliderChange);
 if (rangeG) rangeG.addEventListener("input", onRgbSliderChange);
 if (rangeB) rangeB.addEventListener("input", onRgbSliderChange);
+
+if (valR) {
+    valR.addEventListener("input", () => onRgbNumInputChange(false));
+    valR.addEventListener("change", () => onRgbNumInputChange(true));
+    valR.addEventListener("blur", () => onRgbNumInputChange(true));
+}
+if (valG) {
+    valG.addEventListener("input", () => onRgbNumInputChange(false));
+    valG.addEventListener("change", () => onRgbNumInputChange(true));
+    valG.addEventListener("blur", () => onRgbNumInputChange(true));
+}
+if (valB) {
+    valB.addEventListener("input", () => onRgbNumInputChange(false));
+    valB.addEventListener("change", () => onRgbNumInputChange(true));
+    valB.addEventListener("blur", () => onRgbNumInputChange(true));
+}
 
 if (inputCustomColor) {
     inputCustomColor.addEventListener("input", (e) => {
