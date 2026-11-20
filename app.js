@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 // 스티치 칭찬나라 JavaScript 핵심 기능 제어
 // ==========================================
 
@@ -1580,7 +1580,10 @@ function updatePaletteUI(hex) {
         colorPreviewBox.style.backgroundColor = hex;
     }
     if (colorPreviewText) {
-        colorPreviewText.textContent = hex;
+        if (document.activeElement !== colorPreviewText) {
+            if ('value' in colorPreviewText) colorPreviewText.value = hex;
+            colorPreviewText.textContent = hex;
+        }
     }
     
     const presetBtns = document.querySelectorAll(".color-preset-btn");
@@ -1681,7 +1684,10 @@ function onRgbNumInputChange(isBlur = false) {
     const hex = rgbToHex(r, g, b);
     if (inputCustomColor) inputCustomColor.value = hex;
     if (colorPreviewBox) colorPreviewBox.style.backgroundColor = hex;
-    if (colorPreviewText) colorPreviewText.textContent = hex;
+    if (colorPreviewText && document.activeElement !== colorPreviewText) {
+        if ('value' in colorPreviewText) colorPreviewText.value = hex;
+        colorPreviewText.textContent = hex;
+    }
 
     const presetBtns = document.querySelectorAll(".color-preset-btn");
     presetBtns.forEach(btn => {
@@ -1689,6 +1695,71 @@ function onRgbNumInputChange(isBlur = false) {
             btn.classList.add("active");
         } else {
             btn.classList.remove("active");
+        }
+    });
+}
+
+function parseHexColor(val) {
+    if (!val) return null;
+    let s = val.trim();
+    if (s.startsWith("#")) s = s.slice(1);
+    s = s.toUpperCase();
+    if (!/^[0-9A-F]+$/.test(s)) return null;
+    if (s.length === 3) {
+        return `#${s[0]}${s[0]}${s[1]}${s[1]}${s[2]}${s[2]}`;
+    }
+    if (s.length === 6) {
+        return `#${s}`;
+    }
+    return null;
+}
+
+function onHexInputChange(isBlur = false) {
+    if (!colorPreviewText) return;
+    let val = colorPreviewText.value.trim().toUpperCase();
+    if (val && !val.startsWith("#")) {
+        val = "#" + val;
+    }
+
+    const parsedHex = parseHexColor(val);
+    if (parsedHex) {
+        const { r, g, b } = hexToRgb(parsedHex);
+        if (rangeR) rangeR.value = r;
+        if (rangeG) rangeG.value = g;
+        if (rangeB) rangeB.value = b;
+        if (valR) { if ('value' in valR) valR.value = r; valR.textContent = r; }
+        if (valG) { if ('value' in valG) valG.value = g; valG.textContent = g; }
+        if (valB) { if ('value' in valB) valB.value = b; valB.textContent = b; }
+        if (inputCustomColor) inputCustomColor.value = parsedHex;
+        if (colorPreviewBox) colorPreviewBox.style.backgroundColor = parsedHex;
+
+        const presetBtns = document.querySelectorAll(".color-preset-btn");
+        presetBtns.forEach(btn => {
+            if (btn.getAttribute("data-color").toUpperCase() === parsedHex) {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+
+        if (isBlur) {
+            colorPreviewText.value = parsedHex;
+        }
+    } else if (isBlur) {
+        const r = parseInt(rangeR ? rangeR.value : "0", 10) || 0;
+        const g = parseInt(rangeG ? rangeG.value : "0", 10) || 0;
+        const b = parseInt(rangeB ? rangeB.value : "0", 10) || 0;
+        colorPreviewText.value = rgbToHex(r, g, b);
+    }
+}
+
+if (colorPreviewText && colorPreviewText.tagName === "INPUT") {
+    colorPreviewText.addEventListener("input", () => onHexInputChange(false));
+    colorPreviewText.addEventListener("change", () => onHexInputChange(true));
+    colorPreviewText.addEventListener("blur", () => onHexInputChange(true));
+    colorPreviewText.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            colorPreviewText.blur();
         }
     });
 }

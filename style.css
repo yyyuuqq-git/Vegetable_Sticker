@@ -1055,17 +1055,54 @@ input:disabled {
     align-items: center;
     justify-content: center;
     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     border: 2px solid rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+    cursor: text;
+}
+
+.color-preview-box:focus-within {
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(255, 255, 255, 0.35), 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .color-preview-text {
     font-family: 'Nunito', monospace;
     font-weight: 800;
-    font-size: 16px;
+    font-size: 18px;
     color: #FFFFFF;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+}
+
+input[type="text"].color-preview-input {
+    width: 100% !important;
+    min-width: 100%;
+    max-width: 100%;
+    height: 100% !important;
+    padding: 0 16px !important;
+    font-family: 'Nunito', monospace, var(--font-app) !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    letter-spacing: 2px;
+    text-align: center;
+    border: none !important;
+    border-radius: 12px !important;
+    background: transparent !important;
+    color: #FFFFFF !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    outline: none !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    cursor: text;
+}
+
+input[type="text"].color-preview-input:focus {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 .color-preset-section {
