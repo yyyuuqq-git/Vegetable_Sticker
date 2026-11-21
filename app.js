@@ -245,6 +245,7 @@ const inputCustomColor = document.getElementById("input-custom-color");
 
 // 보드 불러오기
 async function apiGetBoard(boardId) {
+    if (!isVegetableBoard(boardId)) return null;
     if (isLocalMode || !supabaseClient) {
         const localData = localStorage.getItem(`board_${boardId}`);
         if (localData) {
@@ -2219,8 +2220,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
     const boardParam = urlParams.get("board");
     if (boardParam) {
-        currentBoardId = boardParam.trim().toUpperCase();
-        setAppStorage("current_board_id", currentBoardId);
+        const paramId = boardParam.trim().toUpperCase();
+        if (isVegetableBoard(paramId)) {
+            currentBoardId = paramId;
+            setAppStorage("current_board_id", currentBoardId);
+        } else {
+            console.warn("URL로 전달된 보드 ID가 본 앱의 보드가 아닙니다:", paramId);
+            const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+            window.history.replaceState({ path: cleanUrl }, "", cleanUrl);
+        }
     }
 
     updateRoleUI();
